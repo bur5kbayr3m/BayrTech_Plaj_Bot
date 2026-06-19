@@ -107,9 +107,41 @@ async function getDailyReservations() {
   return data;
 }
 
+
+async function getLatestReservation(phone) {
+  const { data } = await supabase
+    .from('reservations')
+    .select('*')
+    .eq('tel_no', phone)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+  return data;
+}
+
+async function cancelReservation(id) {
+  // Fetch reservation and trip
+  const { data: res } = await supabase.from('reservations').select('kisi_sayisi, sefer_id').eq('id', id).single();
+  if (!res) throw new Error('Reservation not found');
+  
+  // Update status to İptal Edildi
+  await supabase.from('reservations').update({ durum: 'İptal Edildi' }).eq('id', id);
+  
+  // Restore quota
+  if (res.sefer_id) {
+    const { data: trip } = await supabase.from('trips').select('rezerve_edilen').eq('id', res.sefer_id).single();
+    if (trip) {
+      const newQuota = Math.max(0, trip.rezerve_edilen - res.kisi_sayisi);
+      await supabase.from('trips').update({ rezerve_edilen: newQuota }).eq('id', res.sefer_id);
+    }
+  }
+}
+
 module.exports = {
   supabase,
   saveReservation,
+  getLatestReservation,
+  cancelReservation,
   updateReservationStatus,
   getDailyReservations
 };

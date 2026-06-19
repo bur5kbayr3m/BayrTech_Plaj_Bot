@@ -115,6 +115,72 @@ app.post('/webhook', async (req, res) => {
           if (adminPhoneNorm.startsWith('0')) adminPhoneNorm = '90' + adminPhoneNorm.substring(1);
           else if (!adminPhoneNorm.startsWith('90') && adminPhoneNorm.length > 0) adminPhoneNorm = '90' + adminPhoneNorm;
           
+          if (replyId === 'cancel_req') {
+            const { getLatestReservation } = require('./supabase');
+            const latest = await getLatestReservation(phone);
+            if (latest && latest.durum === 'Onaylandı') {
+              const { sendCancelRequestToAdmin } = require('./whatsapp');
+              await sendCancelRequestToAdmin(adminPhoneNorm, latest.id, phone, latest);
+              
+              const userSession = getSession(phone);
+              const { sendMessage } = require('./whatsapp');
+              await sendMessage({
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to: phone,
+                type: "text",
+                text: { body: userSession.lang === 'en' ? "⏳ Your cancellation request has been sent to the authority. You will be notified once approved." : "⏳ İptal talebiniz yetkiliye iletildi. Onaylandığında size bilgi verilecektir." }
+              });
+            }
+            return res.sendStatus(200);
+          }
+          
+          if (phone === adminPhoneNorm && (replyId.startsWith('admin_cancel_app_') || replyId.startsWith('admin_cancel_rej_'))) {
+            const isApproved = replyId.startsWith('admin_cancel_app_');
+            const reservationId = isApproved ? replyId.replace('admin_cancel_app_', '') : replyId.replace('admin_cancel_rej_', '');
+            
+            const { cancelReservation } = require('./supabase');
+            const { sendMessage } = require('./whatsapp');
+            
+            if (isApproved) {
+              try {
+                await cancelReservation(reservationId);
+                // We need to fetch user phone to notify them, wait, reservation has it?
+                const { getLatestReservation } = require('./supabase');
+                // Actually cancelReservation doesn't return the phone. Let me just use getLatestReservation or we can assume we know it.
+                // I will add a quick query here
+                const { supabase } = require('./supabase');
+                const { data: resData } = await supabase.from('reservations').select('tel_no').eq('id', reservationId).single();
+                if (resData) {
+                  const customerSession = getSession(resData.tel_no);
+                  await sendMessage({
+                    messaging_product: "whatsapp",
+                    recipient_type: "individual",
+                    to: resData.tel_no,
+                    type: "text",
+                    text: { body: customerSession.lang === 'en' ? "✅ Your reservation has been successfully cancelled." : "✅ Rezervasyonunuz başarıyla iptal edilmiştir." }
+                  });
+                }
+                await sendMessage({
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  to: adminPhoneNorm,
+                  type: "text",
+                  text: { body: "✅ İptal işlemi onaylandı, kontenjan iade edildi ve müşteriye bilgi verildi." }
+                });
+              } catch(e) { console.error(e); }
+            } else {
+              await sendMessage({
+                  messaging_product: "whatsapp",
+                  recipient_type: "individual",
+                  to: adminPhoneNorm,
+                  type: "text",
+                  text: { body: "❌ İptal işlemi reddedildi." }
+              });
+            }
+            return res.sendStatus(200);
+          }
+
           if (phone === adminPhoneNorm && (replyId.startsWith('admin_approve_') || replyId.startsWith('admin_reject_'))) {
             const isApproved = replyId.startsWith('admin_approve_');
             const reservationId = isApproved ? replyId.replace('admin_approve_', '') : replyId.replace('admin_reject_', '');

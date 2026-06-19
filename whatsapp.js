@@ -106,7 +106,7 @@ Hafta Sonu: 1200₺
 }
 
 async function sendMainMenu(phone, lang = 'tr') {
-  const headerText = lang === 'en' ? "🏖️ Welcome to X Beach Shuttle!" : "🏖️ X Plaj Servisine Hoş Geldiniz!";
+  const headerText = "🏖️ GOGA BEACH PLAJ SHUTTLE";
   const bodyText = lang === 'en' ? "How can I help you? Please select an option from the menu:" : "Size nasıl yardımcı olabilirim? Lütfen menüden bir işlem seçin:";
   const buttonText = lang === 'en' ? "Open Menu" : "Menüyü Aç";
   const sectionTitle = lang === 'en' ? "Options" : "İşlemler";
@@ -200,13 +200,13 @@ async function sendFaqList(phone, lang = 'tr') {
 
   const rows = lang === 'en' ? [
     { id: "faq_iptal", title: "Cancellation Policy?" },
-    { id: "faq_evcil", title: "Are Pets Allowed?" },
+    { id: "faq_shuttle", title: "Is the shuttle paid?" },
     { id: "faq_yemek", title: "Outside Food/Drink?" },
     { id: "faq_konum", title: "Location Information" }
   ] : [
     { id: "faq_iptal", title: "İptal Şartları Neler?" },
-    { id: "faq_evcil", title: "Evcil Hayvan Durumu" },
-    { id: "faq_yemek", title: "Dışarıdan Yiyecek" },
+    { id: "faq_shuttle", title: "Servis ücretli mi?" },
+    { id: "faq_yemek", title: "Yiyecek ve İçecek" },
     { id: "faq_konum", title: "Konum Bilgisi" }
   ];
 
@@ -233,13 +233,21 @@ async function sendFaqList(phone, lang = 'tr') {
 async function sendFaqAnswer(phone, faqId, lang = 'tr') {
   let answer = "";
   if (faqId === 'faq_iptal') {
-    answer = lang === 'en' ? "Cancellations must be made at least 1 day in advance. Same-day cancellations are non-refundable." : "İptal işlemleri için en geç 1 gün öncesinden haber vermeniz gerekmektedir. Aynı gün yapılan iptallerde ücret iadesi yapılmaz.";
-  } else if (faqId === 'faq_evcil') {
-    answer = lang === 'en' ? "Unfortunately, we do not accept pets at our beach. Thank you for your understanding." : "Plajımıza maalesef evcil hayvan kabul edemiyoruz. Anlayışınız için teşekkür ederiz.";
+    answer = lang === 'en' 
+      ? "Cancellations must be made at least 1 day in advance." 
+      : "İptal işlemleri için en geç 1 gün öncesinden haber vermeniz gerekmektedir.";
+  } else if (faqId === 'faq_shuttle') {
+    answer = lang === 'en' 
+      ? "Yes, our shuttle service is 300₺ from Hacıosman and 350₺ from Mecidiyeköy (One Way)." 
+      : "Evet, servis ücretimiz tek yön Hacıosman 300₺, Mecidiyeköy 350₺'dir.";
   } else if (faqId === 'faq_yemek') {
-    answer = lang === 'en' ? "Bringing food and drinks from outside is prohibited. We have a restaurant and cafe inside." : "Plaj alanımıza dışarıdan yiyecek ve içecek getirilmesi yasaktır. İçeride restoran ve kafemiz mevcuttur.";
+    answer = lang === 'en' 
+      ? "We have various concept points such as restaurants, cafes, bars, and coffee shops serving our guests at our facility. Therefore, we kindly ask you not to bring food and drinks from outside." 
+      : "Tesisimizde misafirlerimize hizmet veren restoran, kafe, bar, kafeterya ve kahveci gibi çeşitli konsept noktalarımız bulunmaktadır. Bu nedenle dışarıdan yiyecek ve içecek getirilmemesini rica ederiz.";
   } else if (faqId === 'faq_konum') {
-    answer = lang === 'en' ? "Our beach is located in Kilyos. Shuttles depart from Hacıosman Metro (Google Maps: https://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw) and Mecidiyeköy Vakıfbank (https://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw)." : "Plajımız Kilyos'ta yer almaktadır. Seferlerimiz Hacıosman Metro (Google Maps: https://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw) ve Mecidiyeköy Vakıfbank (https://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw) önünden kalkmaktadır.";
+    answer = lang === 'en' 
+      ? `Our beach is located in Kilyos. Shuttles depart from:\n\n📍 Hacıosman Metro:\nhttps://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw\n\n📍 Mecidiyeköy Vakıfbank:\nhttps://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw` 
+      : `Plajımız Kilyos'ta yer almaktadır. Seferlerimiz aşağıdaki noktalardan kalkmaktadır:\n\n📍 Hacıosman Metro:\nhttps://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw\n\n📍 Mecidiyeköy Vakıfbank:\nhttps://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw`;
   }
 
   const menuTitle = lang === 'en' ? "Main Menu" : "Ana Menü";
@@ -286,16 +294,32 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
   const isToday = dayTitle.startsWith('Bugün') || dayTitle.startsWith('Today');
   const currentTimeInt = t.getHours() * 100 + t.getMinutes();
 
-  const allGidis = [
-    { id: "sefer_gidis_mcd_0800", title: "Mecidiyeköy 08:00", timeInt: 800 },
-    { id: "sefer_gidis_hac_1030", title: "Hacıosman 10:30", timeInt: 1030 },
-    { id: "sefer_gidis_hac_1200", title: "Hacıosman 12:00", timeInt: 1200 }
-  ];
-
-  const allDonus = [
-    { id: "sefer_donus_hac_1700", title: "Hacıosman 17:00", timeInt: 1700 },
-    { id: "sefer_donus_hac_1900", title: "Hacıosman 19:00", timeInt: 1900 }
-  ];
+  let allGidis = [];
+  let allDonus = [];
+  
+  if (dayTitle.includes('Cumartesi') || dayTitle.includes('Saturday')) {
+    allGidis = [
+      { id: "sefer_gidis_mcd_0800", title: "Mecidiyeköy 08:00", timeInt: 800 },
+      { id: "sefer_gidis_hac_0830", title: "Hacıosman 08:30", timeInt: 830 },
+      { id: "sefer_gidis_hac_1030", title: "Hacıosman 10:30", timeInt: 1030 },
+      { id: "sefer_gidis_hac_1200", title: "Hacıosman 12:00", timeInt: 1200 }
+    ];
+    allDonus = [
+      { id: "sefer_donus_hac_1700", title: "Hacıosman 17:00", timeInt: 1700 },
+      { id: "sefer_donus_hac_1830", title: "Hacıosman 18:30", timeInt: 1830 },
+      { id: "sefer_donus_hac_1930", title: "Hacıosman 19:30", timeInt: 1930 }
+    ];
+  } else {
+    allGidis = [
+      { id: "sefer_gidis_mcd_0800", title: "Mecidiyeköy 08:00", timeInt: 800 },
+      { id: "sefer_gidis_hac_1030", title: "Hacıosman 10:30", timeInt: 1030 },
+      { id: "sefer_gidis_hac_1200", title: "Hacıosman 12:00", timeInt: 1200 }
+    ];
+    allDonus = [
+      { id: "sefer_donus_hac_1700", title: "Hacıosman 17:00", timeInt: 1700 },
+      { id: "sefer_donus_hac_1900", title: "Hacıosman 19:00", timeInt: 1900 }
+    ];
+  }
 
   let availableGidis = allGidis;
   let availableDonus = allDonus;
@@ -528,7 +552,8 @@ Maalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edi
   return sendMessage(data);
 }
 
-async function sendPdfDocument(adminPhone, filePath, fileName) {
+async function sendPdfDocument,
+  sendCancelRequestToAdmin(adminPhone, filePath, fileName) {
   const data = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
@@ -537,6 +562,28 @@ async function sendPdfDocument(adminPhone, filePath, fileName) {
     document: {
       link: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", 
       caption: "📅 Günlük Rezervasyon Raporu"
+    }
+  };
+  return sendMessage(data);
+}
+
+
+async function sendCancelRequestToAdmin(adminPhone, reservationId, customerPhone, resDetails) {
+  const data = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: adminPhone,
+    type: "interactive",
+    interactive: {
+      type: "button",
+      header: { type: "text", text: "🚨 İptal Talebi!" },
+      body: { text: `Müşteri (+${customerPhone}) rezervasyonunu İPTAL etmek istiyor.\n\n👤 İsim: ${resDetails.ad_soyad}\n📍 Konum: ${resDetails.lokasyon_adi}\n👥 Kişi: ${resDetails.kisi_sayisi}\n\nİptali onaylıyor musunuz?` },
+      action: {
+        buttons: [
+          { type: "reply", reply: { id: `admin_cancel_app_${reservationId}`, title: "✅ İptali Onayla" } },
+          { type: "reply", reply: { id: `admin_cancel_rej_${reservationId}`, title: "❌ İptal Etme" } }
+        ]
+      }
     }
   };
   return sendMessage(data);
