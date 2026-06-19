@@ -137,11 +137,35 @@ async function cancelReservation(id) {
   }
 }
 
+async function getTripCapacity(seferId) {
+  const { data, error } = await supabase
+    .from('trips')
+    .select('tarih, saat, kalkis_yeri, toplam_kapasite, rezerve_edilen')
+    .eq('id', seferId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+async function increaseTripCapacity(seferId, amount = 16) {
+  const trip = await getTripCapacity(seferId);
+  const { data, error } = await supabase
+    .from('trips')
+    .update({ toplam_kapasite: trip.toplam_kapasite + amount })
+    .eq('id', seferId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 module.exports = {
   supabase,
   saveReservation,
   getLatestReservation,
   cancelReservation,
   updateReservationStatus,
-  getDailyReservations
+  getDailyReservations,
+  getTripCapacity,
+  increaseTripCapacity
 };

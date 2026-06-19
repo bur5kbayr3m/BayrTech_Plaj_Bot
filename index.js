@@ -190,9 +190,36 @@ app.post('/webhook', async (req, res) => {
             return res.sendStatus(200);
           }
 
-          if (phone === adminPhoneNorm && (replyId.startsWith('admin_approve_') || replyId.startsWith('admin_reject_'))) {
+          if (phone === adminPhoneNorm && replyId.startsWith('add_cap_')) {
+            const seferId = replyId.replace('add_cap_', '');
+            const { increaseTripCapacity } = require('./supabase');
+            const { sendMessage } = require('./whatsapp');
+            try {
+              await increaseTripCapacity(seferId, 16);
+              await sendMessage({
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to: adminPhoneNorm,
+                type: "text",
+                text: { body: "✅ Kapasite başarıyla +16 artırıldı. Bekleyen talepleri onaylayabilirsiniz!" }
+              });
+            } catch (err) {
+              console.error(err);
+              await sendMessage({
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to: adminPhoneNorm,
+                type: "text",
+                text: { body: "❌ Kapasite artırılırken bir hata oluştu." }
+              });
+            }
+            return res.sendStatus(200);
+          }
+
+          if (phone === adminPhoneNorm && (replyId.startsWith('admin_approve_') || replyId.startsWith('admin_reject_') || replyId.startsWith('admin_full_'))) {
             const isApproved = replyId.startsWith('admin_approve_');
-            const reservationId = isApproved ? replyId.replace('admin_approve_', '') : replyId.replace('admin_reject_', '');
+            const isFull = replyId.startsWith('admin_full_');
+            const reservationId = isApproved ? replyId.replace('admin_approve_', '') : (isFull ? replyId.replace('admin_full_', '') : replyId.replace('admin_reject_', ''));
             const newStatus = isApproved ? 'Onaylandı' : 'Reddedildi';
             
             try {
@@ -200,14 +227,16 @@ app.post('/webhook', async (req, res) => {
               if (updatedRes && updatedRes.tel_no) {
                 const isHaciosman = updatedRes.lokasyon_adi ? updatedRes.lokasyon_adi.toLowerCase().includes('hacıosman') : true;
                 
-                // Fetch the customer's language to send status
                 const customerSession = getSession(updatedRes.tel_no);
-                await sendStatusUpdateToUser(updatedRes.tel_no, newStatus, isHaciosman, customerSession.lang);
+                await sendStatusUpdateToUser(updatedRes.tel_no, isFull ? 'Dolu' : newStatus, isHaciosman, customerSession.lang);
                 
-                // Send feedback back to the admin
-                const feedbackText = isApproved 
-                  ? "✅ Rezervasyon onaylandı ve müşteriye bilgilendirme mesajı (konum dahil) gönderildi."
+                let feedbackText = isApproved 
+                  ? "✅ Rezervasyon onaylandı ve müşteriye bilgilendirme mesajı gönderildi."
                   : "❌ Rezervasyon reddedildi ve müşteriye iptal bilgisi verildi.";
+                
+                if (isFull) {
+                  feedbackText = "✅ Müşteriye kapasitenin dolduğu bilgisi ve yeniden seçim yapması için menüye dönüş butonu gönderildi.";
+                }
                 
                 await sendMessage({
                   messaging_product: "whatsapp",
@@ -216,6 +245,30 @@ app.post('/webhook', async (req, res) => {
                   type: "text",
                   text: { body: feedbackText }
                 });
+
+                // Doluluk kontrolü (Sadece onaylandığında)
+                if (isApproved && updatedRes.sefer_id) {
+                  const { getTripCapacity } = require('./supabase');
+                  const trip = await getTripCapacity(updatedRes.sefer_id);
+                  if (trip && trip.rezerve_edilen >= trip.toplam_kapasite) {
+                    const alertMsg = `🚨 *DİKKAT: KAPASİTE DOLDU!* 🚨\n\n${trip.tarih} ${trip.saat} ${trip.kalkis_yeri} seferi TAMAMEN DOLDU (Kapasite: ${trip.toplam_kapasite}/${trip.toplam_kapasite})!\n\nEk araç tanımlamak (Kapasiteyi +16 artırmak) ister misiniz?`;
+                    await sendMessage({
+                      messaging_product: "whatsapp",
+                      recipient_type: "individual",
+                      to: adminPhoneNorm,
+                      type: "interactive",
+                      interactive: {
+                        type: "button",
+                        body: { text: alertMsg },
+                        action: {
+                          buttons: [
+                            { type: "reply", reply: { id: `add_cap_${updatedRes.sefer_id}`, title: "➕ +16 Artır" } }
+                          ]
+                        }
+                      }
+                    });
+                  }
+                }
               }
             } catch (err) {
               console.error("Error updating reservation status:", err);
@@ -223,7 +276,7 @@ app.post('/webhook', async (req, res) => {
               let errMsg = "❌ Onay işlemi sırasında bir hata oluştu.";
               const errStr = JSON.stringify(err);
               if (errStr.includes('23514') || errStr.includes('capacity') || (err.message && err.message.includes('capacity'))) {
-                errMsg = "❌ Onay başarısız! Bu seferin araç kapasitesi (Maks. 15 kişi) dolmuştur. Lütfen talebi REDDEDİN.";
+                errMsg = "❌ Onay başarısız! Bu seferin araç kapasitesi dolmuştur. Lütfen ⚠️ Dolu (Yönlendir) butonunu kullanın veya kapasiteyi artırın.";
               }
               await sendMessage({
                 messaging_product: "whatsapp",

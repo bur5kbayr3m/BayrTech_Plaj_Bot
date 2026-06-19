@@ -486,7 +486,8 @@ Bu rezervasyonu onaylıyor musunuz?` },
       action: {
         buttons: [
           { type: "reply", reply: { id: `admin_approve_${reservationId}`, title: "✅ Onayla" } },
-          { type: "reply", reply: { id: `admin_reject_${reservationId}`, title: "❌ Reddet" } }
+          { type: "reply", reply: { id: `admin_reject_${reservationId}`, title: "❌ Reddet" } },
+          { type: "reply", reply: { id: `admin_full_${reservationId}`, title: "⚠️ Dolu (Yönlendir)" } }
         ]
       }
     }
@@ -544,6 +545,27 @@ Maalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edi
         action: {
           buttons: [
             { type: "reply", reply: { id: `cancel_req`, title: lang === 'en' ? "❌ Cancel Request" : "❌ İptal Talebi" } }
+          ]
+        }
+      }
+    };
+    return sendMessage(data);
+  } else if (status === 'Dolu') {
+    bodyText = lang === 'en'
+      ? `❌ *Reservation Failed*\n\nUnfortunately, the shuttle you selected has reached its maximum capacity. Please select a different time.`
+      : `❌ *Rezervasyon Başarısız*\n\nMaalesef seçtiğiniz saatin kontenjanı dolmuştur. Lütfen farklı bir saat seçerek rezervasyonunuzu tekrar oluşturun.`;
+      
+    const data = {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: phone,
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: { text: bodyText },
+        action: {
+          buttons: [
+            { type: "reply", reply: { id: `main_menu`, title: lang === 'en' ? "🔄 Reselect" : "🔄 Yeniden Seç" } }
           ]
         }
       }
