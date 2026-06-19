@@ -267,6 +267,15 @@ app.post('/webhook', async (req, res) => {
                         }
                       }
                     });
+                  } else if (trip && trip.rezerve_edilen === trip.toplam_kapasite - 1) {
+                    const alertMsg = `⚠️ *UYARI: SON 1 KİŞİLİK YER KALDI!* ⚠️\n\n${trip.tarih} ${trip.saat} ${trip.kalkis_yeri} seferinin dolmasına sadece 1 kişi kaldı (Kapasite: ${trip.rezerve_edilen}/${trip.toplam_kapasite})!`;
+                    await sendMessage({
+                      messaging_product: "whatsapp",
+                      recipient_type: "individual",
+                      to: adminPhoneNorm,
+                      type: "text",
+                      text: { body: alertMsg }
+                    });
                   }
                 }
               }
