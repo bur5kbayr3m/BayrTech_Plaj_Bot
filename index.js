@@ -219,6 +219,19 @@ app.post('/webhook', async (req, res) => {
               }
             } catch (err) {
               console.error("Error updating reservation status:", err);
+              const { sendMessage } = require('./whatsapp');
+              let errMsg = "❌ Onay işlemi sırasında bir hata oluştu.";
+              const errStr = JSON.stringify(err);
+              if (errStr.includes('23514') || errStr.includes('capacity') || (err.message && err.message.includes('capacity'))) {
+                errMsg = "❌ Onay başarısız! Bu seferin araç kapasitesi (Maks. 15 kişi) dolmuştur. Lütfen talebi REDDEDİN.";
+              }
+              await sendMessage({
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to: adminPhoneNorm,
+                type: "text",
+                text: { body: errMsg }
+              }).catch(e => console.error("Error sending admin fail msg:", e));
             }
             return res.sendStatus(200);
           }

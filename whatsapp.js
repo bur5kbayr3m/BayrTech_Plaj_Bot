@@ -292,17 +292,21 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
       { id: "sefer_gidis_hac_1030", title: "Hacıosman 10:30", timeInt: 1030 },
       { id: "sefer_gidis_hac_1130", title: "Hacıosman 11:30", timeInt: 1130 }
     ];
-    allDonus = [
-      { id: "sefer_donus_hac_1700", title: "Hacıosman 17:00", timeInt: 1700 },
-      { id: "sefer_donus_hac_1830", title: "Hacıosman 18:30", timeInt: 1830 },
-      { id: "sefer_donus_hac_1930", title: "Hacıosman 19:30", timeInt: 1930 }
-    ];
   } else {
     allGidis = [
       { id: "sefer_gidis_mcd_0800", title: "Mecidiyeköy 08:00", timeInt: 800 },
       { id: "sefer_gidis_hac_1030", title: "Hacıosman 10:30", timeInt: 1030 },
       { id: "sefer_gidis_hac_1130", title: "Hacıosman 11:30", timeInt: 1130 }
     ];
+  }
+
+  if (dayTitle.includes('Cumartesi') || dayTitle.includes('Saturday') || dayTitle.includes('Pazar') || dayTitle.includes('Sunday')) {
+    allDonus = [
+      { id: "sefer_donus_hac_1700", title: "Hacıosman 17:00", timeInt: 1700 },
+      { id: "sefer_donus_hac_1830", title: "Hacıosman 18:30", timeInt: 1830 },
+      { id: "sefer_donus_hac_1930", title: "Hacıosman 19:30", timeInt: 1930 }
+    ];
+  } else {
     allDonus = [
       { id: "sefer_donus_hac_1700", title: "Hacıosman 17:00", timeInt: 1700 },
       { id: "sefer_donus_hac_1900", title: "Hacıosman 19:00", timeInt: 1900 }
