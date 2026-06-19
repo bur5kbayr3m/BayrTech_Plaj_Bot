@@ -67,7 +67,7 @@ app.post('/webhook', async (req, res) => {
               name: session.selected_name,
               day: session.selected_day,
               time: session.selected_time,
-              passenger_count: session.selected_count
+              passenger_count: session.selected_count_num || 1
             });
           } catch (err) {
             console.error("Failed to save to Supabase, but continuing flow for UX");
@@ -199,7 +199,8 @@ app.post('/webhook', async (req, res) => {
               return res.sendStatus(200);
             }
 
-            session = updateSession(phone, { step: 4, selected_count: replyTitle });
+            const countNum = parseInt(replyId.split('_').pop()) || 1;
+            session = updateSession(phone, { step: 4, selected_count: replyTitle, selected_count_num: countNum });
             await sendNameRequestMessage(phone, session.lang);
           }
           else {

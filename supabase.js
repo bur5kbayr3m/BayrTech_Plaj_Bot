@@ -24,7 +24,7 @@ async function saveReservation({ phone, name, day, time, passenger_count }) {
         tel_no: phone,
         ad_soyad: name,
         lokasyon_adi: lokasyon_adi,
-        kisi_sayisi: passenger_count, // Since this is a string now e.g. "👩 1 Kadın (1 Kişi)", DB column needs to be TEXT
+        kisi_sayisi: passenger_count, // Must be an integer so that the database trigger doesn't crash on Approve!
         sefer_id: 'a4cd0abd-837d-42f5-896c-295c202e4432', // Dummy or default ID required by Supabase constraint
         durum: 'Beklemede' 
       }
