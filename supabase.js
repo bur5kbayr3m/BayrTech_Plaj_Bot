@@ -11,29 +11,20 @@ if (supabaseUrl && supabaseKey) {
   console.warn('⚠️ Supabase credentials not found. Database operations will fail.');
 }
 
-async function saveReservation({ phone, day, time, passenger_count }) {
+async function saveReservation({ phone, name, day, time, passenger_count }) {
   if (!supabase) throw new Error('Supabase not configured');
   
-  const { data: tripData, error: tripError } = await supabase
-    .from('trips')
-    .select('id')
-    .eq('aktif', true)
-    .limit(1)
-    .single();
-
-  if (tripError || !tripData) {
-    console.warn('⚠️ Aktif bir sefer bulunamadı, sefer_id null olarak veya hatayla sonuçlanabilir.', tripError);
-  }
-  
-  const sefer_id = tripData ? tripData.id : null;
+  // We save lokasyon_adi directly to avoid relation lookup issues for now
+  const lokasyon_adi = time; // e.g. "Hacıosman 10:30"
 
   const { data, error } = await supabase
     .from('reservations')
     .insert([
       { 
-        tel_no: phone, 
-        sefer_id: sefer_id,
-        kisi_sayisi: passenger_count, 
+        tel_no: phone,
+        ad_soyad: name,
+        lokasyon_adi: lokasyon_adi,
+        kisi_sayisi: passenger_count, // Since this is a string now e.g. "👩 1 Kadın (1 Kişi)", DB column needs to be TEXT
         durum: 'Beklemede' 
       }
     ])

@@ -27,10 +27,11 @@ CREATE TABLE IF NOT EXISTS faqs (
 -- Tablo: reservations (Rezervasyonlar)
 CREATE TABLE IF NOT EXISTS reservations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  phone TEXT NOT NULL,
-  day TEXT NOT NULL,
-  time TEXT NOT NULL,
-  passenger_count INTEGER NOT NULL,
-  status TEXT DEFAULT 'confirmed',
+  tel_no TEXT NOT NULL,
+  ad_soyad TEXT,
+  lokasyon_adi TEXT,
+  sefer_id UUID REFERENCES trips(id),
+  kisi_sayisi TEXT NOT NULL,
+  durum TEXT DEFAULT 'Beklemede',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

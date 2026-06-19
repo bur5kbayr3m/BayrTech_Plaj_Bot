@@ -33,6 +33,8 @@ async function sendMessage(data) {
 async function sendWelcomeMessage(phone) {
   const welcomeText = `MERHABA 🌴
 
+⚠️ Plajımıza damsız giriş yapılamamaktadır.
+
 🚐 SHUTTLE (TEK YÖN): 
 Hacıosman: 300₺
 Mecidiyeköy: 350 ₺
@@ -232,7 +234,7 @@ async function sendTripSelectionList(phone, dayTitle) {
   return sendMessage(data);
 }
 
-async function sendPassengerCountList(phone, dayTitle, timeTitle) {
+async function sendGroupSelectionList(phone, dayTitle, timeTitle) {
   const data = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
@@ -242,23 +244,29 @@ async function sendPassengerCountList(phone, dayTitle, timeTitle) {
       "type": "list",
       "header": {
         "type": "text",
-        "text": "👥 Harika! Peki kaç kişi olacaksınız?"
+        "text": "👥 Lütfen Grubunuzu Seçin"
       },
       "body": {
-        "text": `Seçim: ${dayTitle} - ${timeTitle}\nLütfen listeden kişi sayısını seçin.`
+        "text": `Seçim: ${dayTitle} - ${timeTitle}\nPlajımıza damsız giriş yapılamamaktadır. Lütfen grubunuzun yapısını ve kişi sayısını seçin:`
       },
       action: {
-        button: "👥 Kişi Sayısı Seçin",
+        button: "👥 Grup Tipi Seçin",
         sections: [
           {
-            title: "Kişi Sayısı",
+            title: "Uygun Gruplar",
             rows: [
-              { id: "kisi_1", title: "1 Kişi" },
-              { id: "kisi_2", title: "2 Kişi" },
-              { id: "kisi_3", title: "3 Kişi" },
-              { id: "kisi_4", title: "4 Kişi" },
-              { id: "kisi_5", title: "5 Kişi" },
-              { id: "kisi_6", title: "6+ Kişi" }
+              { id: "grup_kadin_1", title: "👩 1 Kadın (1 Kişi)" },
+              { id: "grup_kadin_2", title: "👩‍🦰 2 Kadın (2 Kişi)" },
+              { id: "grup_kadin_3", title: "👩‍🦰 3+ Kadın Grubu" },
+              { id: "grup_karma_2", title: "👫 1 Kadın 1 Erkek" },
+              { id: "grup_karma_3", title: "👨‍👩‍👧‍👦 Karma (3 Kişi)" },
+              { id: "grup_karma_4", title: "👨‍👩‍👧‍👦 Karma (4+ Kişi)" }
+            ]
+          },
+          {
+            title: "Uygun Olmayan Grup",
+            rows: [
+              { id: "grup_erkek_iptal", title: "👨 Sadece Erkek", description: "Rezervasyon kabul edilmez" }
             ]
           }
         ]
@@ -268,20 +276,33 @@ async function sendPassengerCountList(phone, dayTitle, timeTitle) {
   return sendMessage(data);
 }
 
-async function sendProcessingMessage(phone, dayTitle, timeTitle, countTitle) {
+async function sendNameRequestMessage(phone) {
   const data = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
     to: phone,
     type: "text",
     text: {
-      body: `⏳ Rezervasyonunuz İşleniyor!\n\n📅 *Gün:* ${dayTitle}\n⏰ *Saat:* ${timeTitle}\n👥 *Kişi:* ${countTitle}\n\nTalebiniz yetkiliye iletildi. Onaylandıktan sonra size bilgilendirme mesajı gönderilecektir. Bizi tercih ettiğiniz için teşekkürler!`
+      body: "Lütfen rezervasyonunuzu tamamlamak için *Adınızı ve Soyadınızı* yazarak gönderin. (Örn: Ahmet Yılmaz)"
     }
   };
   return sendMessage(data);
 }
 
-async function sendAdminApprovalRequest(adminPhone, reservationId, phone, dayTitle, timeTitle, countTitle) {
+async function sendProcessingMessage(phone, dayTitle, timeTitle, countTitle, nameTitle) {
+  const data = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: phone,
+    type: "text",
+    text: {
+      body: `⏳ Rezervasyonunuz İşleniyor!\n\n👤 *İsim:* ${nameTitle}\n📅 *Gün:* ${dayTitle}\n⏰ *Saat:* ${timeTitle}\n👥 *Grup:* ${countTitle}\n\nTalebiniz yetkiliye iletildi. Onaylandıktan sonra size konum ve bilgilendirme mesajı gönderilecektir. Bizi tercih ettiğiniz için teşekkürler!`
+    }
+  };
+  return sendMessage(data);
+}
+
+async function sendAdminApprovalRequest(adminPhone, reservationId, phone, dayTitle, timeTitle, countTitle, nameTitle) {
   const data = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
@@ -291,10 +312,10 @@ async function sendAdminApprovalRequest(adminPhone, reservationId, phone, dayTit
       type: "button",
       header: {
         type: "text",
-        text: "🔔 Yeni Rezervasyon Talebi!"
+        "text": "🔔 Yeni Rezervasyon Talebi!"
       },
       body: {
-        text: `Müşteri: +${phone}\nGün: ${dayTitle}\nSaat: ${timeTitle}\nKişi Sayısı: ${countTitle}\n\nBu rezervasyonu onaylıyor musunuz?`
+        text: `👤 İsim: ${nameTitle}\n📱 Müşteri: +${phone}\n📅 Gün: ${dayTitle}\n⏰ Saat: ${timeTitle}\n👥 Grup: ${countTitle}\n\nBu rezervasyonu onaylıyor musunuz?`
       },
       action: {
         buttons: [
@@ -307,10 +328,17 @@ async function sendAdminApprovalRequest(adminPhone, reservationId, phone, dayTit
   return sendMessage(data);
 }
 
-async function sendStatusUpdateToUser(phone, status) {
-  const bodyText = status === 'Onaylandı' 
-    ? '🎉 *Rezervasyonunuz Onaylandı!*\n\nServis saatinden 15 dakika önce kalkış noktasında olmanızı rica ederiz. İyi tatiller! 🌊'
-    : '❌ *Rezervasyonunuz Reddedildi.*\n\nMaalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edilmiştir. Lütfen bizimle iletişime geçin.';
+async function sendStatusUpdateToUser(phone, status, isHaciosman) {
+  let bodyText = "";
+  if (status === 'Onaylandı') {
+    const mapsLink = isHaciosman 
+      ? "https://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw"
+      : "https://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw";
+      
+    bodyText = `🎉 *Rezervasyonunuz Onaylandı!*\n\nServis saatinden 15 dakika önce kalkış noktasında olmanızı rica ederiz.\n\n📍 *Kalkış Noktası Konumu:*\n${mapsLink}\n\nİyi tatiller! 🌊`;
+  } else {
+    bodyText = '❌ *Rezervasyonunuz Reddedildi.*\n\nMaalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edilmiştir. Lütfen bizimle iletişime geçin.';
+  }
     
   const data = {
     messaging_product: "whatsapp",
@@ -338,6 +366,7 @@ async function sendPdfDocument(adminPhone, filePath, fileName) {
 }
 
 module.exports = {
+  sendMessage,
   sendWelcomeMessage,
   sendMainMenu,
   sendDaySelectionList,
@@ -345,7 +374,8 @@ module.exports = {
   sendFaqAnswer,
   sendContactSupport,
   sendTripSelectionList,
-  sendPassengerCountList,
+  sendGroupSelectionList,
+  sendNameRequestMessage,
   sendProcessingMessage,
   sendAdminApprovalRequest,
   sendStatusUpdateToUser,
