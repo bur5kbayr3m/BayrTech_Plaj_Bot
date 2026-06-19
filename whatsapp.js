@@ -264,12 +264,12 @@ async function sendFaqAnswer(phone, faqId, lang = 'tr') {
 
 async function sendContactSupport(phone, lang = 'tr') {
   const bodyText = lang === 'en' 
-    ? "🎧 To speak with a representative and get live support, please click the link below to contact us directly via WhatsApp:
+    ? `🎧 To speak with a representative and get live support, please click the link below to contact us directly via WhatsApp:
 
-👉 https://wa.me/905309561053"
-    : "🎧 Yetkiliyle görüşmek ve canlı destek almak için lütfen aşağıdaki linke tıklayarak doğrudan WhatsApp üzerinden iletişime geçin:
+👉 https://wa.me/905309561053`
+    : `🎧 Yetkiliyle görüşmek ve canlı destek almak için lütfen aşağıdaki linke tıklayarak doğrudan WhatsApp üzerinden iletişime geçin:
 
-👉 https://wa.me/905309561053";
+👉 https://wa.me/905309561053`;
 
   const data = {
     messaging_product: "whatsapp",
@@ -510,12 +510,12 @@ ${mapsLink}
 İyi tatiller, sağlıklı günler dileriz! 🌊`;
   } else {
     bodyText = lang === 'en'
-      ? '❌ *Your Reservation is Rejected.*
+      ? `❌ *Your Reservation is Rejected.*
 
-Unfortunately, our quota for your selected time is full or the shuttle was cancelled. Please contact us for details.'
-      : '❌ *Rezervasyonunuz Reddedildi.*
+Unfortunately, our quota for your selected time is full or the shuttle was cancelled. Please contact us for details.`
+      : `❌ *Rezervasyonunuz Reddedildi.*
 
-Maalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edilmiştir. Lütfen bizimle iletişime geçin.';
+Maalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edilmiştir. Lütfen bizimle iletişime geçin.`;
   }
     
   const data = {
