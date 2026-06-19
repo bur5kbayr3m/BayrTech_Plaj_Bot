@@ -14,8 +14,41 @@ if (supabaseUrl && supabaseKey) {
 async function saveReservation({ phone, name, day, time, passenger_count }) {
   if (!supabase) throw new Error('Supabase not configured');
   
-  // We save lokasyon_adi directly to avoid relation lookup issues for now
-  const lokasyon_adi = time; // e.g. "Hacıosman 10:30"
+  const lokasyon_adi = time; // e.g. "Hacıosman 10:30" or "Mecidiyeköy 08:00"
+  
+  // Calculate date from day string "Bugün (Cuma)"
+  const d = new Date();
+  const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+  const t = new Date(utc + (3600000 * 3));
+  
+  if (day.startsWith('Yarın') || day.startsWith('Tomorrow')) {
+    t.setDate(t.getDate() + 1);
+  } else if (!day.startsWith('Bugün') && !day.startsWith('Today')) {
+    t.setDate(t.getDate() + 2); // 3. gun
+  }
+  
+  const dateStr = t.toISOString().split('T')[0];
+  
+  // Parse time
+  let saat = "10:30:00";
+  let kalkis = "Haciosman Metro";
+  if (time.includes('08:00')) { saat = "08:00:00"; kalkis = "Mecidiyekoy"; }
+  else if (time.includes('10:30')) { saat = "10:30:00"; kalkis = "Haciosman Metro"; }
+  else if (time.includes('12:00')) { saat = "12:00:00"; kalkis = "Haciosman Metro"; }
+  else if (time.includes('17:00')) { saat = "17:00:00"; kalkis = "Plaj"; }
+  else if (time.includes('19:00')) { saat = "19:00:00"; kalkis = "Plaj"; }
+
+  // Lookup trip
+  const { data: trip } = await supabase
+    .from('trips')
+    .select('id')
+    .eq('tarih', dateStr)
+    .eq('saat', saat)
+    .limit(1)
+    .single();
+    
+  // Fallback to dummy if not found so it doesn't crash completely
+  const sefer_id = trip ? trip.id : 'a4cd0abd-837d-42f5-896c-295c202e4432';
 
   const { data, error } = await supabase
     .from('reservations')
@@ -25,7 +58,7 @@ async function saveReservation({ phone, name, day, time, passenger_count }) {
         ad_soyad: name,
         lokasyon_adi: lokasyon_adi,
         kisi_sayisi: passenger_count, // Must be an integer so that the database trigger doesn't crash on Approve!
-        sefer_id: 'a4cd0abd-837d-42f5-896c-295c202e4432', // Dummy or default ID required by Supabase constraint
+        sefer_id: sefer_id, 
         durum: 'Beklemede' 
       }
     ])
