@@ -54,15 +54,9 @@ async function sendWelcomeMessage(phone, lang = 'tr') {
   const welcomeText = lang === 'en' 
     ? `HELLO 🌴
 
-⚠️ Entry without a female companion is not allowed.
-
 🚐 SHUTTLE (ONE WAY):
 Hacıosman: 300₺
 Mecidiyeköy: 350₺
-
-For reservation:
-Just write: Stop – Number of People – Time – Name.
-Reservations are taken 1 day in advance.
 
 🏖️ BEACH ENTRANCE FEE
 Weekday: 800₺
@@ -72,18 +66,12 @@ Weekend: 1200₺
 0-6 years free
 7-12 years: half price
 
-❗️Please send your details after this message.`
+⚠️ Entry without a female companion is not allowed.`
     : `MERHABA 🌴
-
-⚠️ Plajımıza damsız giriş yapılamamaktadır.
 
 🚐 SHUTTLE (TEK YÖN):
 Hacıosman: 300₺
 Mecidiyeköy: 350 ₺
-
-Rezervasyon için:
-Durak – Kişi Sayısı – Saat – İsim yazmanız yeterlidir.
-Rezervasyonlar 1 gün önceden alınır.
 
 🏖️ PLAJ GİRİŞ ÜCRETİ
 Hafta İçi: 800₺
@@ -93,7 +81,7 @@ Hafta Sonu: 1200₺
 0-6 yaş ücretsiz
 7-12 yaş: yarı fiyat
 
-❗️Bilgileri lütfen bu mesajdan sonra gönderiniz.`;
+⚠️ Plajımıza damsız giriş yapılamamaktadır.`;
 
   const data = {
     messaging_product: "whatsapp",
