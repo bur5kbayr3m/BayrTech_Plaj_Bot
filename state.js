@@ -4,7 +4,7 @@ const sessions = {};
 
 function getSession(phone) {
   if (!sessions[phone]) {
-    sessions[phone] = { step: 1, selected_day: null, selected_time: null, selected_count: null };
+    sessions[phone] = { step: 0, selected_day: null, selected_time: null, selected_count: null };
   }
   return sessions[phone];
 }
@@ -16,7 +16,7 @@ function updateSession(phone, updates) {
 }
 
 function resetSession(phone) {
-  sessions[phone] = { step: 1, selected_day: null, selected_time: null, selected_count: null };
+  sessions[phone] = { step: 0, selected_day: null, selected_time: null, selected_count: null };
   return sessions[phone];
 }
 

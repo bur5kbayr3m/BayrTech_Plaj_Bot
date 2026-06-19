@@ -30,7 +30,37 @@ async function sendMessage(data) {
   }
 }
 
-async function sendDaySelectionList(phone) {
+async function sendWelcomeMessage(phone) {
+  const welcomeText = `MERHABA 🌴
+
+🚐 SHUTTLE (TEK YÖN): 300₺
+Rezervasyon için:
+Durak – Kişi Sayısı – Saat – İsim yazmanız yeterlidir.
+Rezervasyonlar 1 gün önceden alınır.
+
+🏖️ PLAJ GİRİŞ ÜCRETİ
+Hafta İçi: 600₺
+Hafta Sonu: 900₺
+
+(Şezlong, şemsiye, otopark, duş ve WC dahildir.)
+0-6 yaş ücretsiz
+7-12 yaş: 300₺
+
+📌 Fiyatlar 18 Haziran’a kadar geçerlidir.
+
+❗️Bilgileri lütfen bu mesajdan sonra gönderiniz.`;
+
+  const data = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: phone,
+    type: "text",
+    text: { body: welcomeText }
+  };
+  return sendMessage(data);
+}
+
+async function sendMainMenu(phone) {
   const data = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
@@ -43,7 +73,40 @@ async function sendDaySelectionList(phone) {
         text: "🏖️ X Plaj Servisine Hoş Geldiniz!"
       },
       body: {
-        text: "Size yardımcı olabilmem için lütfen seyahat etmek istediğiniz günü seçin."
+        text: "Size nasıl yardımcı olabilirim? Lütfen menüden bir işlem seçin:"
+      },
+      action: {
+        button: "Menüyü Aç",
+        sections: [
+          {
+            title: "İşlemler",
+            rows: [
+              { id: "menu_rezervasyon", title: "📅 Rezervasyon Yap" },
+              { id: "menu_sss", title: "❓ Sıkça Sorulan Sorular" },
+              { id: "menu_canli_destek", title: "🎧 Canlı Destek" }
+            ]
+          }
+        ]
+      }
+    }
+  };
+  return sendMessage(data);
+}
+
+async function sendDaySelectionList(phone) {
+  const data = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: phone,
+    type: "interactive",
+    interactive: {
+      type: "list",
+      header: {
+        type: "text",
+        text: "📅 Seyahat Günü"
+      },
+      body: {
+        text: "Lütfen rezervasyon yapmak istediğiniz günü seçin:"
       },
       action: {
         button: "📅 Gün Seçiniz",
@@ -60,6 +123,70 @@ async function sendDaySelectionList(phone) {
         ]
       }
     }
+  };
+  return sendMessage(data);
+}
+
+async function sendFaqList(phone) {
+  const data = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: phone,
+    type: "interactive",
+    interactive: {
+      type: "list",
+      header: {
+        type: "text",
+        text: "❓ Sıkça Sorulan Sorular"
+      },
+      body: {
+        text: "Cevabını öğrenmek istediğiniz soruyu seçin:"
+      },
+      action: {
+        button: "Sorular",
+        sections: [
+          {
+            title: "Sıkça Sorulan Sorular",
+            rows: [
+              { id: "faq_iptal", title: "İptal Şartları Neler?" },
+              { id: "faq_evcil", title: "Evcil Hayvan Girebilir mi?" },
+              { id: "faq_yemek", title: "Dışarıdan Yiyecek İçecek?" },
+              { id: "faq_konum", title: "Konum Bilgisi Alabilir Miyim?" }
+            ]
+          }
+        ]
+      }
+    }
+  };
+  return sendMessage(data);
+}
+
+async function sendFaqAnswer(phone, questionId) {
+  let answer = "";
+  if (questionId === "faq_iptal") answer = "Rezervasyon iptalleri sefer saatinden en geç 12 saat önce yapılmalıdır. Aksi takdirde ücret iadesi yapılmaz.";
+  else if (questionId === "faq_evcil") answer = "Plajımıza küçük ırk evcil dostlarımızı tasmalı olmak şartıyla kabul ediyoruz.";
+  else if (questionId === "faq_yemek") answer = "Plaj alanına dışarıdan yiyecek ve içecek getirilmesi yasaktır.";
+  else if (questionId === "faq_konum") answer = "Plajımız Kilyos'ta bulunmaktadır. Konum: https://maps.app.goo.gl/ornek";
+  
+  answer += "\n\nAna menüye dönmek için 'Merhaba' yazabilirsiniz.";
+
+  const data = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: phone,
+    type: "text",
+    text: { body: answer }
+  };
+  return sendMessage(data);
+}
+
+async function sendContactSupport(phone) {
+  const data = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: phone,
+    type: "text",
+    text: { body: "🎧 Yetkiliyle görüşmek ve canlı destek almak için lütfen aşağıdaki linke tıklayarak doğrudan WhatsApp üzerinden iletişime geçin:\n\n👉 https://wa.me/905309561053" }
   };
   return sendMessage(data);
 }
@@ -210,7 +337,12 @@ async function sendPdfDocument(adminPhone, filePath, fileName) {
 }
 
 module.exports = {
+  sendWelcomeMessage,
+  sendMainMenu,
   sendDaySelectionList,
+  sendFaqList,
+  sendFaqAnswer,
+  sendContactSupport,
   sendTripSelectionList,
   sendPassengerCountList,
   sendProcessingMessage,

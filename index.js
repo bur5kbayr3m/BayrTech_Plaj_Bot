@@ -56,7 +56,9 @@ app.post('/webhook', async (req, res) => {
       // Handle any text message -> Restart flow
       if (message.type === 'text') {
         session = resetSession(phone);
-        await sendDaySelectionList(phone);
+        const { sendWelcomeMessage, sendMainMenu } = require('./whatsapp');
+        await sendWelcomeMessage(phone);
+        await sendMainMenu(phone);
       } 
       // Handle interactive message replies
       else if (message.type === 'interactive') {
@@ -92,7 +94,24 @@ app.post('/webhook', async (req, res) => {
             return res.sendStatus(200);
           }
 
-          if (session.step === 1 && replyId.match(/^(bugun|yarin|pazartesi|sali)$/)) {
+          // Main Menu Handle
+          if (replyId === 'menu_rezervasyon') {
+            session = updateSession(phone, { step: 1 });
+            await sendDaySelectionList(phone);
+          } else if (replyId === 'menu_sss') {
+            const { sendFaqList } = require('./whatsapp');
+            await sendFaqList(phone);
+          } else if (replyId === 'menu_canli_destek') {
+            const { sendContactSupport } = require('./whatsapp');
+            await sendContactSupport(phone);
+          }
+          // FAQ Handle
+          else if (replyId.startsWith('faq_')) {
+            const { sendFaqAnswer } = require('./whatsapp');
+            await sendFaqAnswer(phone, replyId);
+          }
+          // Reservation Flow Handle
+          else if (session.step === 1 && replyId.match(/^(bugun|yarin|pazartesi|sali)$/)) {
             session = updateSession(phone, { step: 2, selected_day: replyTitle });
             await sendTripSelectionList(phone, session.selected_day);
           } 
@@ -128,7 +147,9 @@ app.post('/webhook', async (req, res) => {
           }
           else {
             session = resetSession(phone);
-            await sendDaySelectionList(phone);
+            const { sendWelcomeMessage, sendMainMenu } = require('./whatsapp');
+            await sendWelcomeMessage(phone);
+            await sendMainMenu(phone);
           }
         }
       }
