@@ -4,7 +4,7 @@ const sessions = {};
 
 function getSession(phone) {
   if (!sessions[phone]) {
-    sessions[phone] = { step: 0, selected_day: null, selected_time: null, selected_count: null };
+    sessions[phone] = { step: 0, lang: 'tr', selected_day: null, selected_time: null, selected_count: null, selected_name: null };
   }
   return sessions[phone];
 }
@@ -16,7 +16,8 @@ function updateSession(phone, updates) {
 }
 
 function resetSession(phone) {
-  sessions[phone] = { step: 0, selected_day: null, selected_time: null, selected_count: null };
+  const currentLang = sessions[phone] ? sessions[phone].lang : 'tr';
+  sessions[phone] = { step: 0, lang: currentLang, selected_day: null, selected_time: null, selected_count: null, selected_name: null };
   return sessions[phone];
 }
 

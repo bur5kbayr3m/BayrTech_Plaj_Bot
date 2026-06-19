@@ -30,12 +30,54 @@ async function sendMessage(data) {
   }
 }
 
-async function sendWelcomeMessage(phone) {
-  const welcomeText = `MERHABA 🌴
+async function sendLanguageSelection(phone) {
+  const data = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: phone,
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: { text: "Lütfen dil seçin / Please select your language:" },
+      action: {
+        buttons: [
+          { type: "reply", reply: { id: "lang_tr", title: "🇹🇷 Türkçe" } },
+          { type: "reply", reply: { id: "lang_en", title: "🇬🇧 English" } }
+        ]
+      }
+    }
+  };
+  return sendMessage(data);
+}
+
+async function sendWelcomeMessage(phone, lang = 'tr') {
+  const welcomeText = lang === 'en' 
+    ? `HELLO 🌴
+
+⚠️ Entry without a female companion is not allowed.
+
+🚐 SHUTTLE (ONE WAY):
+Hacıosman: 300₺
+Mecidiyeköy: 350₺
+
+For reservation:
+Just write: Stop – Number of People – Time – Name.
+Reservations are taken 1 day in advance.
+
+🏖️ BEACH ENTRANCE FEE
+Weekday: 800₺
+Weekend: 1200₺
+
+(Sunbed, umbrella, parking, shower and WC included.)
+0-6 years free
+7-12 years: half price
+
+❗️Please send your details after this message.`
+    : `MERHABA 🌴
 
 ⚠️ Plajımıza damsız giriş yapılamamaktadır.
 
-🚐 SHUTTLE (TEK YÖN): 
+🚐 SHUTTLE (TEK YÖN):
 Hacıosman: 300₺
 Mecidiyeköy: 350 ₺
 
@@ -63,7 +105,15 @@ Hafta Sonu: 1200₺
   return sendMessage(data);
 }
 
-async function sendMainMenu(phone) {
+async function sendMainMenu(phone, lang = 'tr') {
+  const headerText = lang === 'en' ? "🏖️ Welcome to X Beach Shuttle!" : "🏖️ X Plaj Servisine Hoş Geldiniz!";
+  const bodyText = lang === 'en' ? "How can I help you? Please select an option from the menu:" : "Size nasıl yardımcı olabilirim? Lütfen menüden bir işlem seçin:";
+  const buttonText = lang === 'en' ? "Open Menu" : "Menüyü Aç";
+  const sectionTitle = lang === 'en' ? "Options" : "İşlemler";
+  const rezTitle = lang === 'en' ? "📅 Make Reservation" : "📅 Rezervasyon Yap";
+  const faqTitle = lang === 'en' ? "❓ FAQ" : "❓ Sıkça Sorulan Sorular";
+  const supportTitle = lang === 'en' ? "🎧 Live Support" : "🎧 Canlı Destek";
+
   const data = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
@@ -71,22 +121,17 @@ async function sendMainMenu(phone) {
     type: "interactive",
     interactive: {
       type: "list",
-      header: {
-        type: "text",
-        text: "🏖️ X Plaj Servisine Hoş Geldiniz!"
-      },
-      body: {
-        text: "Size nasıl yardımcı olabilirim? Lütfen menüden bir işlem seçin:"
-      },
+      header: { type: "text", text: headerText },
+      body: { text: bodyText },
       action: {
-        button: "Menüyü Aç",
+        button: buttonText,
         sections: [
           {
-            title: "İşlemler",
+            title: sectionTitle,
             rows: [
-              { id: "menu_rezervasyon", title: "📅 Rezervasyon Yap" },
-              { id: "menu_sss", title: "❓ Sıkça Sorulan Sorular" },
-              { id: "menu_canli_destek", title: "🎧 Canlı Destek" }
+              { id: "menu_rezervasyon", title: rezTitle },
+              { id: "menu_sss", title: faqTitle },
+              { id: "menu_canli_destek", title: supportTitle }
             ]
           }
         ]
@@ -103,14 +148,22 @@ function getTurkeyTime() {
 }
 
 const TR_DAYS = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+const EN_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-async function sendDaySelectionList(phone) {
+async function sendDaySelectionList(phone, lang = 'tr') {
   const t = getTurkeyTime();
-  const d0 = TR_DAYS[t.getDay()];
-  const d1 = TR_DAYS[(t.getDay() + 1) % 7];
-  const d2 = TR_DAYS[(t.getDay() + 2) % 7];
-  const d3 = TR_DAYS[(t.getDay() + 3) % 7];
-  const d4 = TR_DAYS[(t.getDay() + 4) % 7];
+  const days = lang === 'en' ? EN_DAYS : TR_DAYS;
+  const todayTitle = lang === 'en' ? "Today" : "Bugün";
+  const tomorrowTitle = lang === 'en' ? "Tomorrow" : "Yarın";
+  
+  const d0 = days[t.getDay()];
+  const d1 = days[(t.getDay() + 1) % 7];
+  const d2 = days[(t.getDay() + 2) % 7];
+
+  const headerText = lang === 'en' ? "📅 Reservation Day" : "📅 Rezervasyon Günü";
+  const bodyText = lang === 'en' ? "Please select the day you want to book:" : "Lütfen rezervasyon yapmak istediğiniz günü seçin:";
+  const buttonText = lang === 'en' ? "Select Day" : "Gün Seçin";
+  const sectionTitle = lang === 'en' ? "Upcoming Days" : "Önümüzdeki Günler";
 
   const data = {
     messaging_product: "whatsapp",
@@ -119,16 +172,16 @@ async function sendDaySelectionList(phone) {
     type: "interactive",
     interactive: {
       type: "list",
-      header: { type: "text", text: "📅 Rezervasyon Günü" },
-      body: { text: "Lütfen rezervasyon yapmak istediğiniz günü seçin:" },
+      header: { type: "text", text: headerText },
+      body: { text: bodyText },
       action: {
-        button: "Gün Seçin",
+        button: buttonText,
         sections: [
           {
-            title: "Önümüzdeki Günler",
+            title: sectionTitle,
             rows: [
-              { id: "day_bugun", title: `Bugün (${d0})` },
-              { id: "day_yarin", title: `Yarın (${d1})` },
+              { id: "day_bugun", title: `${todayTitle} (${d0})` },
+              { id: "day_yarin", title: `${tomorrowTitle} (${d1})` },
               { id: "day_gun3", title: d2 }
             ]
           }
@@ -139,7 +192,24 @@ async function sendDaySelectionList(phone) {
   return sendMessage(data);
 }
 
-async function sendFaqList(phone) {
+async function sendFaqList(phone, lang = 'tr') {
+  const headerText = lang === 'en' ? "❓ FAQ" : "❓ Sıkça Sorulan Sorular";
+  const bodyText = lang === 'en' ? "Select a question to see the answer:" : "Cevabını öğrenmek istediğiniz soruyu seçin:";
+  const buttonText = lang === 'en' ? "Questions" : "Sorular";
+  const sectionTitle = lang === 'en' ? "FAQ" : "Sıkça Sorulan Sorular";
+
+  const rows = lang === 'en' ? [
+    { id: "faq_iptal", title: "Cancellation Policy?" },
+    { id: "faq_evcil", title: "Are Pets Allowed?" },
+    { id: "faq_yemek", title: "Outside Food/Drink?" },
+    { id: "faq_konum", title: "Location Information" }
+  ] : [
+    { id: "faq_iptal", title: "İptal Şartları Neler?" },
+    { id: "faq_evcil", title: "Evcil Hayvan Durumu" },
+    { id: "faq_yemek", title: "Dışarıdan Yiyecek" },
+    { id: "faq_konum", title: "Konum Bilgisi" }
+  ];
+
   const data = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
@@ -147,25 +217,12 @@ async function sendFaqList(phone) {
     type: "interactive",
     interactive: {
       type: "list",
-      header: {
-        type: "text",
-        text: "❓ Sıkça Sorulan Sorular"
-      },
-      body: {
-        text: "Cevabını öğrenmek istediğiniz soruyu seçin:"
-      },
+      header: { type: "text", text: headerText },
+      body: { text: bodyText },
       action: {
-        button: "Sorular",
+        button: buttonText,
         sections: [
-          {
-            title: "Sıkça Sorulan Sorular",
-            rows: [
-              { id: "faq_iptal", title: "İptal Şartları Neler?" },
-              { id: "faq_evcil", title: "Evcil Hayvan Durumu" },
-              { id: "faq_yemek", title: "Dışarıdan Yiyecek" },
-              { id: "faq_konum", title: "Konum Bilgisi" }
-            ]
-          }
+          { title: sectionTitle, rows: rows }
         ]
       }
     }
@@ -173,17 +230,19 @@ async function sendFaqList(phone) {
   return sendMessage(data);
 }
 
-async function sendFaqAnswer(phone, faqId) {
+async function sendFaqAnswer(phone, faqId, lang = 'tr') {
   let answer = "";
   if (faqId === 'faq_iptal') {
-    answer = "İptal işlemleri için en geç 1 gün öncesinden haber vermeniz gerekmektedir. Aynı gün yapılan iptallerde ücret iadesi yapılmaz.";
+    answer = lang === 'en' ? "Cancellations must be made at least 1 day in advance. Same-day cancellations are non-refundable." : "İptal işlemleri için en geç 1 gün öncesinden haber vermeniz gerekmektedir. Aynı gün yapılan iptallerde ücret iadesi yapılmaz.";
   } else if (faqId === 'faq_evcil') {
-    answer = "Plajımıza maalesef evcil hayvan kabul edemiyoruz. Anlayışınız için teşekkür ederiz.";
+    answer = lang === 'en' ? "Unfortunately, we do not accept pets at our beach. Thank you for your understanding." : "Plajımıza maalesef evcil hayvan kabul edemiyoruz. Anlayışınız için teşekkür ederiz.";
   } else if (faqId === 'faq_yemek') {
-    answer = "Plaj alanımıza dışarıdan yiyecek ve içecek getirilmesi yasaktır. İçeride restoran ve kafemiz mevcuttur.";
+    answer = lang === 'en' ? "Bringing food and drinks from outside is prohibited. We have a restaurant and cafe inside." : "Plaj alanımıza dışarıdan yiyecek ve içecek getirilmesi yasaktır. İçeride restoran ve kafemiz mevcuttur.";
   } else if (faqId === 'faq_konum') {
-    answer = "Plajımız Kilyos'ta yer almaktadır. Seferlerimiz Hacıosman Metro (Google Maps: https://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw) ve Mecidiyeköy Vakıfbank (https://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw) önünden kalkmaktadır.";
+    answer = lang === 'en' ? "Our beach is located in Kilyos. Shuttles depart from Hacıosman Metro (Google Maps: https://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw) and Mecidiyeköy Vakıfbank (https://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw)." : "Plajımız Kilyos'ta yer almaktadır. Seferlerimiz Hacıosman Metro (Google Maps: https://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw) ve Mecidiyeköy Vakıfbank (https://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw) önünden kalkmaktadır.";
   }
+
+  const menuTitle = lang === 'en' ? "Main Menu" : "Ana Menü";
 
   const data = {
     messaging_product: "whatsapp",
@@ -195,7 +254,7 @@ async function sendFaqAnswer(phone, faqId) {
       body: { text: answer },
       action: {
         buttons: [
-          { type: "reply", reply: { id: "menu_ana", title: "Ana Menü" } }
+          { type: "reply", reply: { id: "menu_ana", title: menuTitle } }
         ]
       }
     }
@@ -203,19 +262,28 @@ async function sendFaqAnswer(phone, faqId) {
   return sendMessage(data);
 }
 
-async function sendContactSupport(phone) {
+async function sendContactSupport(phone, lang = 'tr') {
+  const bodyText = lang === 'en' 
+    ? "🎧 To speak with a representative and get live support, please click the link below to contact us directly via WhatsApp:
+
+👉 https://wa.me/905309561053"
+    : "🎧 Yetkiliyle görüşmek ve canlı destek almak için lütfen aşağıdaki linke tıklayarak doğrudan WhatsApp üzerinden iletişime geçin:
+
+👉 https://wa.me/905309561053";
+
   const data = {
+    messaging_product: "whatsapp",
     recipient_type: "individual",
     to: phone,
     type: "text",
-    text: { body: "🎧 Yetkiliyle görüşmek ve canlı destek almak için lütfen aşağıdaki linke tıklayarak doğrudan WhatsApp üzerinden iletişime geçin:\n\n👉 https://wa.me/905309561053" }
+    text: { body: bodyText }
   };
   return sendMessage(data);
 }
 
-async function sendTripSelectionList(phone, dayTitle) {
+async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
   const t = getTurkeyTime();
-  const isToday = dayTitle.startsWith('Bugün');
+  const isToday = dayTitle.startsWith('Bugün') || dayTitle.startsWith('Today');
   const currentTimeInt = t.getHours() * 100 + t.getMinutes();
 
   const allGidis = [
@@ -238,28 +306,35 @@ async function sendTripSelectionList(phone, dayTitle) {
   }
 
   if (availableGidis.length === 0 && availableDonus.length === 0) {
+    const errorMsg = lang === 'en' 
+      ? `Sorry, all our shuttles for ${dayTitle} have passed. Please return to the main menu to select another day.`
+      : `Üzgünüz, ${dayTitle} için tüm servislerimizin saati geçmiştir. Lütfen farklı bir gün seçmek için ana menüye dönünüz.`;
     return sendMessage({
       messaging_product: "whatsapp",
       recipient_type: "individual",
       to: phone,
       type: 'text',
-      text: { body: `Üzgünüz, ${dayTitle} için tüm servislerimizin saati geçmiştir. Lütfen farklı bir gün seçmek için ana menüye dönünüz.` }
+      text: { body: errorMsg }
     });
   }
 
   const sections = [];
   if (availableGidis.length > 0) {
     sections.push({
-      title: "🏖️ Gidiş Seferleri",
+      title: lang === 'en' ? "🏖️ Departures" : "🏖️ Gidiş Seferleri",
       rows: availableGidis.map(t => ({ id: t.id, title: t.title }))
     });
   }
   if (availableDonus.length > 0) {
     sections.push({
-      title: "🌆 Dönüş Seferleri",
+      title: lang === 'en' ? "🌆 Returns" : "🌆 Dönüş Seferleri",
       rows: availableDonus.map(t => ({ id: t.id, title: t.title }))
     });
   }
+
+  const headerText = lang === 'en' ? `🚐 ${dayTitle} Shuttles` : `🚐 ${dayTitle} Günü Seferleri`;
+  const bodyText = lang === 'en' ? "Please select your departure point and time:" : "Lütfen rezervasyon yapmak istediğiniz kalkış noktası ve saati seçin:";
+  const buttonText = lang === 'en' ? "⏱️ Select Time" : "⏱️ Sefer Seçiniz";
 
   const data = {
     messaging_product: "whatsapp",
@@ -268,10 +343,10 @@ async function sendTripSelectionList(phone, dayTitle) {
     type: "interactive",
     interactive: {
       type: "list",
-      header: { type: "text", text: `🚐 ${dayTitle} Günü Seferleri` },
-      body: { text: "Lütfen rezervasyon yapmak istediğiniz kalkış noktası ve saati seçin:" },
+      header: { type: "text", text: headerText },
+      body: { text: bodyText },
       action: {
-        button: "⏱️ Sefer Seçiniz",
+        button: buttonText,
         sections: sections
       }
     }
@@ -279,41 +354,54 @@ async function sendTripSelectionList(phone, dayTitle) {
   return sendMessage(data);
 }
 
-async function sendGroupSelectionList(phone, dayTitle, timeTitle) {
+async function sendGroupSelectionList(phone, dayTitle, timeTitle, lang = 'tr') {
+  const headerText = lang === 'en' ? "👥 Select Your Group" : "👥 Lütfen Grubunuzu Seçin";
+  const bodyText = lang === 'en' 
+    ? `Selection: ${dayTitle} - ${timeTitle}
+Entry without female companion is not allowed. Please select your group structure:`
+    : `Seçim: ${dayTitle} - ${timeTitle}
+Plajımıza damsız giriş yapılamamaktadır. Lütfen grubunuzun yapısını ve kişi sayısını seçin:`;
+  
+  const btnText = lang === 'en' ? "👥 Select Group Type" : "👥 Grup Tipi Seçin";
+  const validGroupsTitle = lang === 'en' ? "Valid Groups" : "Uygun Gruplar";
+  const invalidGroupTitle = lang === 'en' ? "Invalid Group" : "Uygun Olmayan Grup";
+
+  const rows = lang === 'en' ? [
+    { id: "grup_kadin_1", title: "👩 1 Woman (1 Person)" },
+    { id: "grup_kadin_2", title: "👩‍🦰 2 Women (2 Ppl)" },
+    { id: "grup_kadin_3", title: "👩‍🦰 3+ Women Group" },
+    { id: "grup_karma_2", title: "👫 1 W / 1 M" },
+    { id: "grup_karma_3", title: "👨‍👩‍👧‍👦 Mixed (3 Ppl)" },
+    { id: "grup_karma_4", title: "👨‍👩‍👧‍👦 Mixed (4+ Ppl)" }
+  ] : [
+    { id: "grup_kadin_1", title: "👩 1 Kadın (1 Kişi)" },
+    { id: "grup_kadin_2", title: "👩‍🦰 2 Kadın (2 Kişi)" },
+    { id: "grup_kadin_3", title: "👩‍🦰 3+ Kadın Grubu" },
+    { id: "grup_karma_2", title: "👫 1 Kadın 1 Erkek" },
+    { id: "grup_karma_3", title: "👨‍👩‍👧‍👦 Karma (3 Kişi)" },
+    { id: "grup_karma_4", title: "👨‍👩‍👧‍👦 Karma (4+ Kişi)" }
+  ];
+
+  const invalidRows = lang === 'en' ? [
+    { id: "grup_erkek_iptal", title: "👨 Only Men", description: "Not allowed" }
+  ] : [
+    { id: "grup_erkek_iptal", title: "👨 Sadece Erkek", description: "Rezervasyon kabul edilmez" }
+  ];
+
   const data = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
     to: phone,
     type: "interactive",
     interactive: {
-      "type": "list",
-      "header": {
-        "type": "text",
-        "text": "👥 Lütfen Grubunuzu Seçin"
-      },
-      "body": {
-        "text": `Seçim: ${dayTitle} - ${timeTitle}\nPlajımıza damsız giriş yapılamamaktadır. Lütfen grubunuzun yapısını ve kişi sayısını seçin:`
-      },
+      type: "list",
+      header: { type: "text", text: headerText },
+      body: { text: bodyText },
       action: {
-        button: "👥 Grup Tipi Seçin",
+        button: btnText,
         sections: [
-          {
-            title: "Uygun Gruplar",
-            rows: [
-              { id: "grup_kadin_1", title: "👩 1 Kadın (1 Kişi)" },
-              { id: "grup_kadin_2", title: "👩‍🦰 2 Kadın (2 Kişi)" },
-              { id: "grup_kadin_3", title: "👩‍🦰 3+ Kadın Grubu" },
-              { id: "grup_karma_2", title: "👫 1 Kadın 1 Erkek" },
-              { id: "grup_karma_3", title: "👨‍👩‍👧‍👦 Karma (3 Kişi)" },
-              { id: "grup_karma_4", title: "👨‍👩‍👧‍👦 Karma (4+ Kişi)" }
-            ]
-          },
-          {
-            title: "Uygun Olmayan Grup",
-            rows: [
-              { id: "grup_erkek_iptal", title: "👨 Sadece Erkek", description: "Rezervasyon kabul edilmez" }
-            ]
-          }
+          { title: validGroupsTitle, rows: rows },
+          { title: invalidGroupTitle, rows: invalidRows }
         ]
       }
     }
@@ -321,28 +409,45 @@ async function sendGroupSelectionList(phone, dayTitle, timeTitle) {
   return sendMessage(data);
 }
 
-async function sendNameRequestMessage(phone) {
+async function sendNameRequestMessage(phone, lang = 'tr') {
+  const bodyText = lang === 'en'
+    ? "Please write and send your *First and Last Name* to complete the reservation. (e.g. John Doe)"
+    : "Lütfen rezervasyonunuzu tamamlamak için *Adınızı ve Soyadınızı* yazarak gönderin. (Örn: Ahmet Yılmaz)";
   const data = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
     to: phone,
     type: "text",
-    text: {
-      body: "Lütfen rezervasyonunuzu tamamlamak için *Adınızı ve Soyadınızı* yazarak gönderin. (Örn: Ahmet Yılmaz)"
-    }
+    text: { body: bodyText }
   };
   return sendMessage(data);
 }
 
-async function sendProcessingMessage(phone, dayTitle, timeTitle, countTitle, nameTitle) {
+async function sendProcessingMessage(phone, dayTitle, timeTitle, countTitle, nameTitle, lang = 'tr') {
+  const bodyText = lang === 'en'
+    ? `⏳ Your Reservation is Processing!
+
+👤 *Name:* ${nameTitle}
+📅 *Day:* ${dayTitle}
+⏰ *Time:* ${timeTitle}
+👥 *Group:* ${countTitle}
+
+Your request has been forwarded to the admin. You will receive a confirmation and location message once approved. Thank you for choosing us!`
+    : `⏳ Rezervasyonunuz İşleniyor!
+
+👤 *İsim:* ${nameTitle}
+📅 *Gün:* ${dayTitle}
+⏰ *Saat:* ${timeTitle}
+👥 *Grup:* ${countTitle}
+
+Talebiniz yetkiliye iletildi. Onaylandıktan sonra size konum ve bilgilendirme mesajı gönderilecektir. Bizi tercih ettiğiniz için teşekkürler!`;
+
   const data = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
     to: phone,
     type: "text",
-    text: {
-      body: `⏳ Rezervasyonunuz İşleniyor!\n\n👤 *İsim:* ${nameTitle}\n📅 *Gün:* ${dayTitle}\n⏰ *Saat:* ${timeTitle}\n👥 *Grup:* ${countTitle}\n\nTalebiniz yetkiliye iletildi. Onaylandıktan sonra size konum ve bilgilendirme mesajı gönderilecektir. Bizi tercih ettiğiniz için teşekkürler!`
-    }
+    text: { body: bodyText }
   };
   return sendMessage(data);
 }
@@ -355,13 +460,14 @@ async function sendAdminApprovalRequest(adminPhone, reservationId, phone, dayTit
     type: "interactive",
     interactive: {
       type: "button",
-      header: {
-        type: "text",
-        "text": "🔔 Yeni Rezervasyon Talebi!"
-      },
-      body: {
-        text: `👤 İsim: ${nameTitle}\n📱 Müşteri: +${phone}\n📅 Gün: ${dayTitle}\n⏰ Saat: ${timeTitle}\n👥 Grup: ${countTitle}\n\nBu rezervasyonu onaylıyor musunuz?`
-      },
+      header: { type: "text", text: "🔔 Yeni Rezervasyon Talebi!" },
+      body: { text: `👤 İsim: ${nameTitle}
+📱 Müşteri: +${phone}
+📅 Gün: ${dayTitle}
+⏰ Saat: ${timeTitle}
+👥 Grup: ${countTitle}
+
+Bu rezervasyonu onaylıyor musunuz?` },
       action: {
         buttons: [
           { type: "reply", reply: { id: `admin_approve_${reservationId}`, title: "✅ Onayla" } },
@@ -373,15 +479,26 @@ async function sendAdminApprovalRequest(adminPhone, reservationId, phone, dayTit
   return sendMessage(data);
 }
 
-async function sendStatusUpdateToUser(phone, status, isHaciosman) {
+async function sendStatusUpdateToUser(phone, status, isHaciosman, lang = 'tr') {
   let bodyText = "";
-  if (status === 'Onaylandı') {
-    const mapsLink = isHaciosman 
+  const mapsLink = isHaciosman 
       ? "https://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw"
       : "https://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw";
-      
-    const durak = isHaciosman ? "Hacıosman Metro" : "Mecidiyeköy";
-    bodyText = `🎉 *Rezervasyonunuz Onaylandı!*
+  const durak = isHaciosman ? "Hacıosman Metro" : "Mecidiyeköy";
+
+  if (status === 'Onaylandı') {
+    bodyText = lang === 'en'
+      ? `🎉 *Your Reservation is Confirmed!*
+
+Selected Stop: *${durak}*
+
+Please be at the departure point 15 minutes before the shuttle time.
+
+📍 *Departure Point Location:*
+${mapsLink}
+
+Have a great holiday and stay healthy! 🌊`
+      : `🎉 *Rezervasyonunuz Onaylandı!*
 
 Seçtiğiniz Durak: *${durak}*
 
@@ -392,7 +509,13 @@ ${mapsLink}
 
 İyi tatiller, sağlıklı günler dileriz! 🌊`;
   } else {
-    bodyText = '❌ *Rezervasyonunuz Reddedildi.*\n\nMaalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edilmiştir. Lütfen bizimle iletişime geçin.';
+    bodyText = lang === 'en'
+      ? '❌ *Your Reservation is Rejected.*
+
+Unfortunately, our quota for your selected time is full or the shuttle was cancelled. Please contact us for details.'
+      : '❌ *Rezervasyonunuz Reddedildi.*
+
+Maalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edilmiştir. Lütfen bizimle iletişime geçin.';
   }
     
   const data = {
@@ -406,7 +529,6 @@ ${mapsLink}
 }
 
 async function sendPdfDocument(adminPhone, filePath, fileName) {
-  // Demo modunda doğrudan PDF yüklemesi simüle edilir.
   const data = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
@@ -422,6 +544,7 @@ async function sendPdfDocument(adminPhone, filePath, fileName) {
 
 module.exports = {
   sendMessage,
+  sendLanguageSelection,
   sendWelcomeMessage,
   sendMainMenu,
   sendDaySelectionList,
