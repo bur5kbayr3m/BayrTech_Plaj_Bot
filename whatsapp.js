@@ -541,15 +541,33 @@ Unfortunately, our quota for your selected time is full or the shuttle was cance
 
 Maalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edilmiştir. Lütfen bizimle iletişime geçin.`;
   }
-    
-  const data = {
-    messaging_product: "whatsapp",
-    recipient_type: "individual",
-    to: phone,
-    type: "text",
-    text: { body: bodyText }
-  };
-  return sendMessage(data);
+  if (status === 'Onaylandı') {
+    const data = {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: phone,
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: { text: bodyText },
+        action: {
+          buttons: [
+            { type: "reply", reply: { id: `cancel_req`, title: lang === 'en' ? "❌ Cancel Reservation" : "❌ İptal Etmek İstiyorum" } }
+          ]
+        }
+      }
+    };
+    return sendMessage(data);
+  } else {
+    const data = {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: phone,
+      type: "text",
+      text: { body: bodyText }
+    };
+    return sendMessage(data);
+  }
 }
 
 async function sendPdfDocument(adminPhone, filePath, fileName) {
