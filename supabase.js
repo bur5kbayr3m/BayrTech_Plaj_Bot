@@ -234,6 +234,19 @@ async function cleanUpDatabase() {
     if (err2) console.error('[Temizlik] Eski kayıtlar silinirken hata:', err2);
     else console.log('[Temizlik] 4 günden eski kayıtlar temizlendi.');
     
+    // 3. 24 saatten eski ve adminin onaylamayı/reddetmeyi unuttuğu 'Beklemede' kayıtları sil
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    
+    const { error: err3 } = await supabase
+      .from('reservations')
+      .delete()
+      .eq('durum', 'Beklemede')
+      .lt('created_at', oneDayAgo.toISOString());
+      
+    if (err3) console.error('[Temizlik] Eski beklemede olanlar silinirken hata:', err3);
+    else console.log('[Temizlik] 1 günden eski Beklemede kayıtlar temizlendi.');
+    
   } catch (err) {
     console.error('[Temizlik] Hata:', err);
   }
