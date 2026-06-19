@@ -2,8 +2,9 @@ const cron = require('node-cron');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
-const { getDailyReservations } = require('./supabase');
+const { getDailyReservations, cleanUpDatabase } = require('./supabase');
 const { sendPdfDocument } = require('./whatsapp');
+const { cleanUpSessions } = require('./state');
 require('dotenv').config();
 
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
@@ -89,8 +90,12 @@ async function runDailyReport() {
     await sendPdfDocument(ADMIN_PHONE, fileUrl, fileName);
     console.log('Rapor admin numarasına gönderildi.');
     
+    // Veritabanı ve Session Temizliği
+    await cleanUpDatabase();
+    cleanUpSessions();
+    
   } catch (error) {
-    console.error('PDF Rapor oluşturulurken hata oluştu:', error);
+    console.error('PDF Rapor veya Temizlik sırasında hata oluştu:', error);
   }
 }
 

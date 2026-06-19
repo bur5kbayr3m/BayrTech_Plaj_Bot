@@ -39,7 +39,7 @@ async function saveReservation({ phone, name, day, time, passenger_count }) {
   else if (time.includes('19:00')) { saat = "19:00:00"; kalkis = "Plaj"; }
 
   // Lookup trip
-  const { data: trip } = await supabase
+  let { data: trip } = await supabase
     .from('trips')
     .select('id')
     .eq('tarih', dateStr)
@@ -47,8 +47,31 @@ async function saveReservation({ phone, name, day, time, passenger_count }) {
     .limit(1)
     .single();
     
-  // Fallback to dummy if not found so it doesn't crash completely
-  const sefer_id = trip ? trip.id : 'a4cd0abd-837d-42f5-896c-295c202e4432';
+  if (!trip) {
+    const { data: newTrip, error: newTripErr } = await supabase
+      .from('trips')
+      .insert([{
+        tarih: dateStr,
+        saat: saat,
+        kalkis_yeri: kalkis,
+        varis_yeri: 'Plaj',
+        toplam_kapasite: 16,
+        rezerve_edilen: 0,
+        aktif: true
+      }])
+      .select()
+      .single();
+      
+    if (newTripErr) {
+      console.error('Error auto-creating trip:', newTripErr);
+      trip = { id: 'a4cd0abd-837d-42f5-896c-295c202e4432' }; // fallback safely
+    } else {
+      trip = newTrip;
+      console.log(`[Otomatik Sefer] Yeni sefer oluşturuldu: ${dateStr} ${saat} ${kalkis}`);
+    }
+  }
+  
+  const sefer_id = trip.id;
 
   const { data, error } = await supabase
     .from('reservations')
@@ -159,6 +182,36 @@ async function increaseTripCapacity(seferId, amount = 16) {
   return data;
 }
 
+async function cleanUpDatabase() {
+  if (!supabase) return;
+  console.log('[Temizlik] Veritabanı temizliği başlatılıyor...');
+  try {
+    // 1. Dünü biten İptal Edildi ve Reddedildi olanları sil
+    const { error: err1 } = await supabase
+      .from('reservations')
+      .delete()
+      .in('durum', ['Reddedildi', 'İptal Edildi']);
+      
+    if (err1) console.error('[Temizlik] Reddedilenler silinirken hata:', err1);
+    else console.log('[Temizlik] Reddedilen/İptal edilen kayıtlar temizlendi.');
+
+    // 2. Üzerinden 4 gün geçmiş eski kayıtları sil
+    const fourDaysAgo = new Date();
+    fourDaysAgo.setDate(fourDaysAgo.getDate() - 4);
+    
+    const { error: err2 } = await supabase
+      .from('reservations')
+      .delete()
+      .lt('created_at', fourDaysAgo.toISOString());
+      
+    if (err2) console.error('[Temizlik] Eski kayıtlar silinirken hata:', err2);
+    else console.log('[Temizlik] 4 günden eski kayıtlar temizlendi.');
+    
+  } catch (err) {
+    console.error('[Temizlik] Hata:', err);
+  }
+}
+
 module.exports = {
   supabase,
   saveReservation,
@@ -167,5 +220,6 @@ module.exports = {
   updateReservationStatus,
   getDailyReservations,
   getTripCapacity,
-  increaseTripCapacity
+  increaseTripCapacity,
+  cleanUpDatabase
 };
