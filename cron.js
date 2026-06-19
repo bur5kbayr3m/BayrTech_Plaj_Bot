@@ -38,38 +38,41 @@ function generatePdf(reservations, filePath) {
         doc.fontSize(14).text('Bu rapor icin onaylanmis rezervasyon bulunmamaktadir.', { align: 'center' });
       } else {
         // Table Header
-        doc.fontSize(12).font('Helvetica-Bold');
-        doc.text('Isim Soyisim', 40, doc.y, { continued: true, width: 180 });
-        doc.text('Telefon', 220, doc.y, { continued: true, width: 150 });
-        doc.text('Kisi', 370, doc.y, { continued: true, width: 50 });
-        doc.text('Kalkis Yeri', 420, doc.y, { continued: true, width: 160 });
-        doc.text('Sefer Tarihi / Saati', 580, doc.y);
-        
-        doc.moveDown(0.5);
-        doc.moveTo(40, doc.y).lineTo(780, doc.y).stroke();
-        doc.moveDown(0.5);
+      const startY = doc.y;
+      doc.fontSize(12).font('Helvetica-Bold');
+      doc.text('Isim Soyisim', 40, startY, { lineBreak: false });
+      doc.text('Telefon', 220, startY, { lineBreak: false });
+      doc.text('Kisi', 370, startY, { lineBreak: false });
+      doc.text('Kalkis Yeri', 420, startY, { lineBreak: false });
+      doc.text('Saat', 580, startY, { lineBreak: false });
+      
+      doc.moveDown(1);
+      doc.moveTo(40, doc.y).lineTo(780, doc.y).stroke();
+      doc.moveDown(1);
 
-        // Table Rows
-        doc.font('Helvetica');
-        reservations.forEach((res) => {
-          const trip = res.trips || {};
-          const adSoyad = replaceTurkishChars(res.ad_soyad || 'Bilinmiyor');
-          const kalkis = replaceTurkishChars(trip.kalkis_yeri || 'Bilinmiyor');
-          const tarihSaat = `${trip.tarih || ''} ${trip.saat || ''}`;
-          const tel = `+${res.tel_no}`;
-          const kisi = `${res.kisi_sayisi}`;
-          
-          doc.text(adSoyad, 40, doc.y, { continued: true, width: 180 });
-          doc.text(tel, 220, doc.y, { continued: true, width: 150 });
-          doc.text(kisi, 370, doc.y, { continued: true, width: 50 });
-          doc.text(kalkis, 420, doc.y, { continued: true, width: 160 });
-          doc.text(tarihSaat, 580, doc.y);
-          
-          doc.moveDown(0.5);
-          doc.moveTo(40, doc.y).lineTo(780, doc.y).strokeColor('#cccccc').stroke();
-          doc.strokeColor('#000000'); // Reset stroke color
-          doc.moveDown(0.5);
-        });
+      // Table Rows
+      doc.font('Helvetica');
+      reservations.forEach((res) => {
+        const y = doc.y;
+        
+        // Clean texts
+        const isim = replaceTurkishChars(res.ad_soyad).substring(0, 25); // truncate to avoid overflow
+        const tel = replaceTurkishChars(res.tel_no);
+        const kisi = res.kisi_sayisi ? res.kisi_sayisi.toString() : '1';
+        const kalkis = res.trips && res.trips.kalkis_yeri ? replaceTurkishChars(res.trips.kalkis_yeri) : '-';
+        const saat = res.trips && res.trips.saat ? res.trips.saat.substring(0,5) : '-';
+
+        doc.text(isim, 40, y, { lineBreak: false });
+        doc.text(tel, 220, y, { lineBreak: false });
+        doc.text(kisi, 370, y, { lineBreak: false });
+        doc.text(kalkis, 420, y, { lineBreak: false });
+        doc.text(saat, 580, y, { lineBreak: false });
+        
+        doc.y = y + 15; // fixed row height
+        doc.moveTo(40, doc.y).lineTo(780, doc.y).strokeColor('#cccccc').stroke();
+        doc.strokeColor('#000000'); // Reset stroke color
+        doc.y = doc.y + 10;
+      });
       }
 
       doc.end();
