@@ -1,0 +1,18 @@
+{
+  "name": "bayrtech-shuttle-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp Business Reservation Bot for a beach shuttle service.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.3",
+    "axios": "^1.6.5",
+    "dotenv": "^16.4.1",
+    "express": "^4.18.2",
+    "node-cron": "^4.4.1",
+    "pdfkit": "^0.19.1"
+  }
+}
