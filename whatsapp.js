@@ -93,7 +93,7 @@ async function sendMainMenu(phone) {
       }
     }
   };
-  return sendMessage(phone, data);
+  return sendMessage(data);
 }
 
 function getTurkeyTime() {
@@ -113,6 +113,9 @@ async function sendDaySelectionList(phone) {
   const d4 = TR_DAYS[(t.getDay() + 4) % 7];
 
   const data = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: phone,
     type: "interactive",
     interactive: {
       type: "list",
@@ -135,11 +138,14 @@ async function sendDaySelectionList(phone) {
       }
     }
   };
-  return sendMessage(phone, data);
+  return sendMessage(data);
 }
 
 async function sendFaqList(phone) {
   const data = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: phone,
     type: "interactive",
     interactive: {
       type: "list",
@@ -166,7 +172,7 @@ async function sendFaqList(phone) {
       }
     }
   };
-  return sendMessage(phone, data);
+  return sendMessage(data);
 }
 
 async function sendFaqAnswer(phone, faqId) {
@@ -182,6 +188,9 @@ async function sendFaqAnswer(phone, faqId) {
   }
 
   const data = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: phone,
     type: "interactive",
     interactive: {
       type: "button",
@@ -193,7 +202,7 @@ async function sendFaqAnswer(phone, faqId) {
       }
     }
   };
-  return sendMessage(phone, data);
+  return sendMessage(data);
 }
 
 async function sendContactSupport(phone) {

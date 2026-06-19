@@ -173,7 +173,10 @@ app.post('/webhook', async (req, res) => {
           else if (session.step === 3 && replyId.startsWith('grup_')) {
             if (replyId === 'grup_erkek_iptal') {
               const { sendMessage } = require('./whatsapp');
-              await sendMessage(phone, {
+              await sendMessage({
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to: phone,
                 type: "text",
                 text: { body: "❌ Üzgünüz, plajımıza damsız giriş yapılamadığı için sadece erkek gruplarının rezervasyonunu kabul edemiyoruz. Anlayışınız için teşekkür ederiz." }
               });
