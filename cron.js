@@ -45,6 +45,7 @@ function generatePdf(reservations, filePath) {
       doc.text('Kisi', 370, startY, { lineBreak: false });
       doc.text('Kalkis Yeri', 420, startY, { lineBreak: false });
       doc.text('Saat', 580, startY, { lineBreak: false });
+      doc.text('Tarih', 660, startY, { lineBreak: false });
       
       doc.moveDown(1);
       doc.moveTo(40, doc.y).lineTo(780, doc.y).stroke();
@@ -61,12 +62,22 @@ function generatePdf(reservations, filePath) {
         const kisi = res.kisi_sayisi ? res.kisi_sayisi.toString() : '1';
         const kalkis = res.trips && res.trips.kalkis_yeri ? replaceTurkishChars(res.trips.kalkis_yeri) : '-';
         const saat = res.trips && res.trips.saat ? res.trips.saat.substring(0,5) : '-';
+        
+        // Use the trip's date or a fallback
+        let tarih = '-';
+        if (res.trips && res.trips.tarih) {
+          // format "YYYY-MM-DD" to "DD.MM.YYYY"
+          const parts = res.trips.tarih.split('-');
+          if (parts.length === 3) tarih = `${parts[2]}.${parts[1]}.${parts[0]}`;
+          else tarih = res.trips.tarih;
+        }
 
         doc.text(isim, 40, y, { lineBreak: false });
         doc.text(tel, 220, y, { lineBreak: false });
         doc.text(kisi, 370, y, { lineBreak: false });
         doc.text(kalkis, 420, y, { lineBreak: false });
         doc.text(saat, 580, y, { lineBreak: false });
+        doc.text(tarih, 660, y, { lineBreak: false });
         
         doc.y = y + 15; // fixed row height
         doc.moveTo(40, doc.y).lineTo(780, doc.y).strokeColor('#cccccc').stroke();
