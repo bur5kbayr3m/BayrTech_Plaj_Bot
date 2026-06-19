@@ -85,12 +85,14 @@ async function runDailyReport() {
   }
 }
 
-// Her gün saat 20:00'de çalışır
+// Her gün saat 24:00'te (00:00) çalışır
 function startCronJobs() {
-  cron.schedule('0 20 * * *', () => {
+  cron.schedule('0 0 * * *', () => {
     runDailyReport();
+  }, {
+    timezone: "Europe/Istanbul"
   });
-  console.log('📅 Cron job başlatıldı: Her akşam 20:00\'de rapor gönderilecek.');
+  console.log('📅 Cron job başlatıldı: Her gece 00:00\'da rapor gönderilecek.');
 }
 
 module.exports = {

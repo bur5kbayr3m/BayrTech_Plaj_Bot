@@ -129,9 +129,7 @@ async function sendDaySelectionList(phone) {
             rows: [
               { id: "day_bugun", title: `Bugün (${d0})` },
               { id: "day_yarin", title: `Yarın (${d1})` },
-              { id: "day_gun3", title: d2 },
-              { id: "day_gun4", title: d3 },
-              { id: "day_gun5", title: d4 }
+              { id: "day_gun3", title: d2 }
             ]
           }
         ]
