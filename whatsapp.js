@@ -33,20 +33,21 @@ async function sendMessage(data) {
 async function sendWelcomeMessage(phone) {
   const welcomeText = `MERHABA 🌴
 
-🚐 SHUTTLE (TEK YÖN): 300₺
+🚐 SHUTTLE (TEK YÖN): 
+Hacıosman: 300₺
+Mecidiyeköy: 350 ₺
+
 Rezervasyon için:
 Durak – Kişi Sayısı – Saat – İsim yazmanız yeterlidir.
 Rezervasyonlar 1 gün önceden alınır.
 
 🏖️ PLAJ GİRİŞ ÜCRETİ
-Hafta İçi: 600₺
-Hafta Sonu: 900₺
+Hafta İçi: 800₺
+Hafta Sonu: 1200₺
 
 (Şezlong, şemsiye, otopark, duş ve WC dahildir.)
 0-6 yaş ücretsiz
-7-12 yaş: 300₺
-
-📌 Fiyatlar 18 Haziran’a kadar geçerlidir.
+7-12 yaş: yarı fiyat
 
 ❗️Bilgileri lütfen bu mesajdan sonra gönderiniz.`;
 
