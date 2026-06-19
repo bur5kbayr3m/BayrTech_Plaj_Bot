@@ -382,7 +382,17 @@ async function sendStatusUpdateToUser(phone, status, isHaciosman) {
       ? "https://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw"
       : "https://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw";
       
-    bodyText = `🎉 *Rezervasyonunuz Onaylandı!*\n\nServis saatinden 15 dakika önce kalkış noktasında olmanızı rica ederiz.\n\n📍 *Kalkış Noktası Konumu:*\n${mapsLink}\n\nİyi tatiller! 🌊`;
+    const durak = isHaciosman ? "Hacıosman Metro" : "Mecidiyeköy";
+    bodyText = `🎉 *Rezervasyonunuz Onaylandı!*
+
+Seçtiğiniz Durak: *${durak}*
+
+Servis saatinden 15 dakika önce kalkış noktasında olmanızı rica ederiz.
+
+📍 *Kalkış Noktası Konumu:*
+${mapsLink}
+
+İyi tatiller, sağlıklı günler dileriz! 🌊`;
   } else {
     bodyText = '❌ *Rezervasyonunuz Reddedildi.*\n\nMaalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edilmiştir. Lütfen bizimle iletişime geçin.';
   }

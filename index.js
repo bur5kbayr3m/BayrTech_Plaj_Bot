@@ -112,9 +112,12 @@ app.post('/webhook', async (req, res) => {
         }
 
         if (replyId) {
-          const ADMIN_PHONE = process.env.ADMIN_PHONE;
+          let adminPhoneNorm = process.env.ADMIN_PHONE || '';
+          adminPhoneNorm = adminPhoneNorm.trim().replace('+', '');
+          if (adminPhoneNorm.startsWith('0')) adminPhoneNorm = '90' + adminPhoneNorm.substring(1);
+          else if (!adminPhoneNorm.startsWith('90') && adminPhoneNorm.length > 0) adminPhoneNorm = '90' + adminPhoneNorm;
           
-          if (phone === ADMIN_PHONE && (replyId.startsWith('admin_approve_') || replyId.startsWith('admin_reject_'))) {
+          if (phone === adminPhoneNorm && (replyId.startsWith('admin_approve_') || replyId.startsWith('admin_reject_'))) {
             const isApproved = replyId.startsWith('admin_approve_');
             const reservationId = isApproved ? replyId.replace('admin_approve_', '') : replyId.replace('admin_reject_', '');
             const newStatus = isApproved ? 'Onaylandı' : 'Reddedildi';
