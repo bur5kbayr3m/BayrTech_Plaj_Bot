@@ -9,45 +9,65 @@ require('dotenv').config();
 
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
 
+function replaceTurkishChars(text) {
+  if (!text) return '';
+  const charMap = {
+    'ş': 's', 'Ş': 'S', 'ı': 'i', 'İ': 'I',
+    'ğ': 'g', 'Ğ': 'G', 'ü': 'u', 'Ü': 'U',
+    'ö': 'o', 'Ö': 'O', 'ç': 'c', 'Ç': 'C'
+  };
+  return text.replace(/[şŞıİğĞüÜöÖçÇ]/g, match => charMap[match]);
+}
+
 function generatePdf(reservations, filePath) {
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ margin: 50 });
+      const doc = new PDFDocument({ margin: 40, size: 'A4', layout: 'landscape' });
       const stream = fs.createWriteStream(filePath);
       doc.pipe(stream);
 
       // Header
-      doc.fontSize(20).text('Günlük Rezervasyon Raporu', { align: 'center' });
+      doc.fontSize(22).text('GOGA BEACH GUNLUK REZERVASYON RAPORU', { align: 'center' });
       doc.moveDown();
-      doc.fontSize(12).text(`Tarih: ${new Date().toLocaleDateString('tr-TR')}`, { align: 'right' });
+      
+      const todayStr = new Date().toLocaleDateString('tr-TR');
+      doc.fontSize(12).text(`Olusturulma Tarihi: ${todayStr}`, { align: 'right' });
       doc.moveDown(2);
 
       if (!reservations || reservations.length === 0) {
-        doc.fontSize(14).text('Onaylanmış rezervasyon bulunmamaktadır.', { align: 'center' });
+        doc.fontSize(14).text('Bu rapor icin onaylanmis rezervasyon bulunmamaktadir.', { align: 'center' });
       } else {
         // Table Header
         doc.fontSize(12).font('Helvetica-Bold');
-        doc.text('Telefon', 50, doc.y, { continued: true, width: 150 });
-        doc.text('Kişi', 200, doc.y, { continued: true, width: 50 });
-        doc.text('Kalkış', 250, doc.y, { continued: true, width: 100 });
-        doc.text('Tarih/Saat', 350, doc.y);
+        doc.text('Isim Soyisim', 40, doc.y, { continued: true, width: 180 });
+        doc.text('Telefon', 220, doc.y, { continued: true, width: 150 });
+        doc.text('Kisi', 370, doc.y, { continued: true, width: 50 });
+        doc.text('Kalkis Yeri', 420, doc.y, { continued: true, width: 160 });
+        doc.text('Sefer Tarihi / Saati', 580, doc.y);
+        
         doc.moveDown(0.5);
-        doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+        doc.moveTo(40, doc.y).lineTo(780, doc.y).stroke();
         doc.moveDown(0.5);
 
         // Table Rows
         doc.font('Helvetica');
         reservations.forEach((res) => {
           const trip = res.trips || {};
-          const kalkis = trip.kalkis_yeri || 'Bilinmiyor';
+          const adSoyad = replaceTurkishChars(res.ad_soyad || 'Bilinmiyor');
+          const kalkis = replaceTurkishChars(trip.kalkis_yeri || 'Bilinmiyor');
           const tarihSaat = `${trip.tarih || ''} ${trip.saat || ''}`;
+          const tel = `+${res.tel_no}`;
+          const kisi = `${res.kisi_sayisi}`;
           
-          doc.text(`+${res.tel_no}`, 50, doc.y, { continued: true, width: 150 });
-          doc.text(`${res.kisi_sayisi}`, 200, doc.y, { continued: true, width: 50 });
-          doc.text(kalkis, 250, doc.y, { continued: true, width: 100 });
-          doc.text(tarihSaat, 350, doc.y);
+          doc.text(adSoyad, 40, doc.y, { continued: true, width: 180 });
+          doc.text(tel, 220, doc.y, { continued: true, width: 150 });
+          doc.text(kisi, 370, doc.y, { continued: true, width: 50 });
+          doc.text(kalkis, 420, doc.y, { continued: true, width: 160 });
+          doc.text(tarihSaat, 580, doc.y);
+          
           doc.moveDown(0.5);
-          doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+          doc.moveTo(40, doc.y).lineTo(780, doc.y).strokeColor('#cccccc').stroke();
+          doc.strokeColor('#000000'); // Reset stroke color
           doc.moveDown(0.5);
         });
       }

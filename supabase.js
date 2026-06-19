@@ -111,8 +111,13 @@ async function updateReservationStatus(id, newStatus) {
 async function getDailyReservations() {
   if (!supabase) throw new Error('Supabase not configured');
   
-  // Normalde yarının tarihine göre filtreleme yapılır: .eq('day', 'Yarın') veya trip tablosu üzerinden tarih filtresi.
-  // Test için tüm 'Onaylandı' olanları getiriyoruz.
+  // Calculate tomorrow's date for filtering
+  const d = new Date();
+  const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+  const t = new Date(utc + (3600000 * 3));
+  t.setDate(t.getDate() + 1); // Tomorrow
+  const tomorrowStr = t.toISOString().split('T')[0];
+  
   const { data, error } = await supabase
     .from('reservations')
     .select(`
@@ -127,7 +132,9 @@ async function getDailyReservations() {
     .eq('durum', 'Onaylandı');
     
   if (error) throw error;
-  return data;
+  
+  // Filter for tomorrow's trips in memory to avoid complex joins
+  return data.filter(res => res.trips && res.trips.tarih === tomorrowStr);
 }
 
 
