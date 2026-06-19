@@ -163,9 +163,9 @@ async function sendFaqList(phone) {
             title: "Sıkça Sorulan Sorular",
             rows: [
               { id: "faq_iptal", title: "İptal Şartları Neler?" },
-              { id: "faq_evcil", title: "Evcil Hayvan Girebilir mi?" },
-              { id: "faq_yemek", title: "Dışarıdan Yiyecek İçecek?" },
-              { id: "faq_konum", title: "Konum Bilgisi Alabilir Miyim?" }
+              { id: "faq_evcil", title: "Evcil Hayvan Durumu" },
+              { id: "faq_yemek", title: "Dışarıdan Yiyecek" },
+              { id: "faq_konum", title: "Konum Bilgisi" }
             ]
           }
         ]
