@@ -329,10 +329,10 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
     availableDonus = allDonus.filter(trip => trip.timeInt > currentTimeInt);
   }
 
-  if (availableGidis.length === 0 && availableDonus.length === 0) {
+  if (availableGidis.length === 0) {
     const errorMsg = lang === 'en' 
-      ? `Sorry, all our shuttles for ${dayTitle} have passed. Please return to the main menu to select another day.`
-      : `Üzgünüz, ${dayTitle} için tüm servislerimizin saati geçmiştir. Lütfen farklı bir gün seçmek için ana menüye dönünüz.`;
+      ? `Sorry, all our departure shuttles for ${dayTitle} have passed. Please return to the main menu to select another day.`
+      : `Üzgünüz, ${dayTitle} için tüm gidiş servislerimizin saati geçmiştir. Lütfen farklı bir gün seçmek için ana menüye dönünüz.`;
     return sendMessage({
       messaging_product: "whatsapp",
       recipient_type: "individual",
@@ -343,22 +343,23 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
   }
 
   const sections = [];
-  if (availableGidis.length > 0) {
-    sections.push({
-      title: lang === 'en' ? "🏖️ Departures" : "🏖️ Gidiş Seferleri",
-      rows: availableGidis.map(t => ({ id: t.id, title: t.title }))
-    });
-  }
+  sections.push({
+    title: lang === 'en' ? "🏖️ Departures" : "🏖️ Gidiş Seferleri",
+    rows: availableGidis.map(t => ({ id: t.id, title: t.title }))
+  });
+
+  let donusText = lang === 'en' 
+    ? "\n\n🌆 *Return Shuttles (Info Only):*\n" 
+    : "\n\n🌆 *Dönüş Sefer Saatleri (Sadece Bilgi):*\n";
   if (availableDonus.length > 0) {
-    sections.push({
-      title: lang === 'en' ? "🌆 Returns" : "🌆 Dönüş Seferleri",
-      rows: availableDonus.map(t => ({ id: t.id, title: t.title }))
-    });
+    donusText += availableDonus.map(t => "• " + t.title).join("\n");
+  } else {
+    donusText += lang === 'en' ? "No return shuttles available." : "Uygun dönüş seferi bulunmamaktadır.";
   }
 
   const headerText = lang === 'en' ? `🚐 ${dayTitle} Shuttles` : `🚐 ${dayTitle} Günü Seferleri`;
-  const bodyText = lang === 'en' ? "Please select your departure point and time:" : "Lütfen rezervasyon yapmak istediğiniz kalkış noktası ve saati seçin:";
-  const buttonText = lang === 'en' ? "⏱️ Select Time" : "⏱️ Sefer Seçiniz";
+  const bodyText = (lang === 'en' ? "Please select your departure point and time:" : "Lütfen rezervasyon yapmak istediğiniz kalkış noktası ve saati seçin (Sadece gidiş seferleri rezerve edilebilir):") + donusText;
+  const buttonText = lang === 'en' ? "⏱️ Select Departure" : "⏱️ Gidiş Seçiniz";
 
   const data = {
     messaging_product: "whatsapp",
