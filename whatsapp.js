@@ -552,8 +552,7 @@ Maalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edi
   return sendMessage(data);
 }
 
-async function sendPdfDocument,
-  sendCancelRequestToAdmin(adminPhone, filePath, fileName) {
+async function sendPdfDocument(adminPhone, filePath, fileName) {
   const data = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
@@ -604,5 +603,6 @@ module.exports = {
   sendProcessingMessage,
   sendAdminApprovalRequest,
   sendStatusUpdateToUser,
-  sendPdfDocument
+  sendPdfDocument,
+  sendCancelRequestToAdmin
 };
