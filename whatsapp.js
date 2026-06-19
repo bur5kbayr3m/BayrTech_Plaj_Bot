@@ -384,15 +384,13 @@ Plajımıza damsız giriş yapılamamaktadır. Lütfen grubunuzun yapısını ve
     { id: "grup_kadin_2", title: "👩‍🦰 2 Women (2 Ppl)" },
     { id: "grup_kadin_3", title: "👩‍🦰 3+ Women Group" },
     { id: "grup_karma_2", title: "👫 1 W / 1 M" },
-    { id: "grup_karma_3", title: "👨‍👩‍👧‍👦 Mixed (3 Ppl)" },
-    { id: "grup_karma_4", title: "👨‍👩‍👧‍👦 Mixed (4+ Ppl)" }
+    { id: "grup_karma_3", title: "👨‍👩‍👧‍👦 Mixed (3 Ppl)" }
   ] : [
     { id: "grup_kadin_1", title: "👩 1 Kadın (1 Kişi)" },
     { id: "grup_kadin_2", title: "👩‍🦰 2 Kadın (2 Kişi)" },
     { id: "grup_kadin_3", title: "👩‍🦰 3+ Kadın Grubu" },
     { id: "grup_karma_2", title: "👫 1 Kadın 1 Erkek" },
-    { id: "grup_karma_3", title: "👨‍👩‍👧‍👦 Karma (3 Kişi)" },
-    { id: "grup_karma_4", title: "👨‍👩‍👧‍👦 Karma (4+ Kişi)" }
+    { id: "grup_karma_3", title: "👨‍👩‍👧‍👦 Karma (3 Kişi)" }
   ];
 
   const invalidRows = lang === 'en' ? [
@@ -559,14 +557,15 @@ Maalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edi
   }
 }
 
-async function sendPdfDocument(adminPhone, filePath, fileName) {
+async function sendPdfDocument(adminPhone, fileUrl, fileName) {
   const data = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
     to: adminPhone,
     type: "document",
     document: {
-      link: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", 
+      link: fileUrl, 
+      filename: fileName,
       caption: "📅 Günlük Rezervasyon Raporu"
     }
   };

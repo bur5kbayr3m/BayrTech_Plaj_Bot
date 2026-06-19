@@ -19,8 +19,17 @@ const {
   sendMessage
 } = require('./whatsapp');
 
+const fs = require('fs');
+const path = require('path');
+
 const app = express();
 app.use(express.json());
+
+const pdfDir = path.join(__dirname, 'public_pdfs');
+if (!fs.existsSync(pdfDir)) {
+  fs.mkdirSync(pdfDir);
+}
+app.use('/public_pdfs', express.static(pdfDir));
 
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);

@@ -71,13 +71,22 @@ async function runDailyReport() {
     const reservations = await getDailyReservations();
     
     const fileName = `Rapor_${new Date().toISOString().split('T')[0]}.pdf`;
-    const filePath = path.join(__dirname, fileName);
+    
+    const pdfDir = path.join(__dirname, 'public_pdfs');
+    if (!fs.existsSync(pdfDir)) {
+      fs.mkdirSync(pdfDir);
+    }
+    const filePath = path.join(pdfDir, fileName);
     
     await generatePdf(reservations, filePath);
     console.log(`PDF başarıyla oluşturuldu: ${filePath}`);
     
-    // Admine PDF gönder (Demo modunda simülasyon)
-    await sendPdfDocument(ADMIN_PHONE, filePath, fileName);
+    // Uygulama URL'sini bul (Render üzerinde otomatik RENDER_EXTERNAL_URL var)
+    const appUrl = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL || 'http://localhost:3000';
+    const fileUrl = `${appUrl}/public_pdfs/${fileName}`;
+    
+    // Admine PDF gönder
+    await sendPdfDocument(ADMIN_PHONE, fileUrl, fileName);
     console.log('Rapor admin numarasına gönderildi.');
     
   } catch (error) {
