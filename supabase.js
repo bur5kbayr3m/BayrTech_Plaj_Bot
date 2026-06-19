@@ -29,14 +29,17 @@ async function saveReservation({ phone, name, day, time, passenger_count }) {
   
   const dateStr = t.toISOString().split('T')[0];
   
-  // Parse time
+  // Parse time and yon
   let saat = "10:30:00";
   let kalkis = "Haciosman Metro";
-  if (time.includes('08:00')) { saat = "08:00:00"; kalkis = "Mecidiyekoy"; }
-  else if (time.includes('10:30')) { saat = "10:30:00"; kalkis = "Haciosman Metro"; }
-  else if (time.includes('11:30')) { saat = "11:30:00"; kalkis = "Haciosman Metro"; }
-  else if (time.includes('17:00')) { saat = "17:00:00"; kalkis = "Plaj"; }
-  else if (time.includes('19:00')) { saat = "19:00:00"; kalkis = "Plaj"; }
+  let yon = "Gidis";
+  if (time.includes('08:00')) { saat = "08:00:00"; kalkis = "Mecidiyekoy"; yon = "Gidis"; }
+  else if (time.includes('10:30')) { saat = "10:30:00"; kalkis = "Haciosman Metro"; yon = "Gidis"; }
+  else if (time.includes('11:30')) { saat = "11:30:00"; kalkis = "Haciosman Metro"; yon = "Gidis"; }
+  else if (time.includes('17:00')) { saat = "17:00:00"; kalkis = "Plaj"; yon = "Donus"; }
+  else if (time.includes('18:30')) { saat = "18:30:00"; kalkis = "Plaj"; yon = "Donus"; }
+  else if (time.includes('19:00')) { saat = "19:00:00"; kalkis = "Plaj"; yon = "Donus"; }
+  else if (time.includes('19:30')) { saat = "19:30:00"; kalkis = "Plaj"; yon = "Donus"; }
 
   // Lookup trip
   let { data: trip } = await supabase
@@ -53,8 +56,9 @@ async function saveReservation({ phone, name, day, time, passenger_count }) {
       .insert([{
         tarih: dateStr,
         saat: saat,
+        yon: yon,
         kalkis_yeri: kalkis,
-        varis_yeri: 'Plaj',
+        varis_yeri: yon === 'Gidis' ? 'Plaj' : 'Haciosman Metro',
         toplam_kapasite: 16,
         rezerve_edilen: 0,
         aktif: true
@@ -97,6 +101,10 @@ async function saveReservation({ phone, name, day, time, passenger_count }) {
 
 async function updateReservationStatus(id, newStatus) {
   if (!supabase) throw new Error('Supabase not configured');
+  
+  // Get current status to see if we need to free up capacity
+  const { data: currentRes } = await supabase.from('reservations').select('durum, kisi_sayisi, sefer_id').eq('id', id).single();
+  
   const { data, error } = await supabase
     .from('reservations')
     .update({ durum: newStatus })
@@ -105,6 +113,18 @@ async function updateReservationStatus(id, newStatus) {
     .single();
     
   if (error) throw error;
+  
+  // If moving FROM Onaylandı TO Reddedildi/İptal, the PG trigger doesn't decrement it, so we must do it manually!
+  if (currentRes && currentRes.sefer_id) {
+    if (currentRes.durum === 'Onaylandı' && (newStatus === 'Reddedildi' || newStatus === 'İptal Edildi')) {
+      const { data: trip } = await supabase.from('trips').select('rezerve_edilen').eq('id', currentRes.sefer_id).single();
+      if (trip) {
+        const newQuota = Math.max(0, trip.rezerve_edilen - currentRes.kisi_sayisi);
+        await supabase.from('trips').update({ rezerve_edilen: newQuota }).eq('id', currentRes.sefer_id);
+      }
+    }
+  }
+  
   return data;
 }
 
