@@ -552,7 +552,7 @@ Maalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edi
         body: { text: bodyText },
         action: {
           buttons: [
-            { type: "reply", reply: { id: `cancel_req`, title: lang === 'en' ? "❌ Cancel Reservation" : "❌ İptal Etmek İstiyorum" } }
+            { type: "reply", reply: { id: `cancel_req`, title: lang === 'en' ? "❌ Cancel Request" : "❌ İptal Talebi" } }
           ]
         }
       }
