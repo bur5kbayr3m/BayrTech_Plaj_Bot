@@ -34,7 +34,7 @@ async function saveReservation({ phone, name, day, time, passenger_count }) {
   let kalkis = "Haciosman Metro";
   if (time.includes('08:00')) { saat = "08:00:00"; kalkis = "Mecidiyekoy"; }
   else if (time.includes('10:30')) { saat = "10:30:00"; kalkis = "Haciosman Metro"; }
-  else if (time.includes('12:00')) { saat = "12:00:00"; kalkis = "Haciosman Metro"; }
+  else if (time.includes('11:30')) { saat = "11:30:00"; kalkis = "Haciosman Metro"; }
   else if (time.includes('17:00')) { saat = "17:00:00"; kalkis = "Plaj"; }
   else if (time.includes('19:00')) { saat = "19:00:00"; kalkis = "Plaj"; }
 

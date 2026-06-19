@@ -290,7 +290,7 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
       { id: "sefer_gidis_mcd_0800", title: "Mecidiyeköy 08:00", timeInt: 800 },
       { id: "sefer_gidis_hac_0830", title: "Hacıosman 08:30", timeInt: 830 },
       { id: "sefer_gidis_hac_1030", title: "Hacıosman 10:30", timeInt: 1030 },
-      { id: "sefer_gidis_hac_1200", title: "Hacıosman 12:00", timeInt: 1200 }
+      { id: "sefer_gidis_hac_1130", title: "Hacıosman 11:30", timeInt: 1130 }
     ];
     allDonus = [
       { id: "sefer_donus_hac_1700", title: "Hacıosman 17:00", timeInt: 1700 },
@@ -301,7 +301,7 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
     allGidis = [
       { id: "sefer_gidis_mcd_0800", title: "Mecidiyeköy 08:00", timeInt: 800 },
       { id: "sefer_gidis_hac_1030", title: "Hacıosman 10:30", timeInt: 1030 },
-      { id: "sefer_gidis_hac_1200", title: "Hacıosman 12:00", timeInt: 1200 }
+      { id: "sefer_gidis_hac_1130", title: "Hacıosman 11:30", timeInt: 1130 }
     ];
     allDonus = [
       { id: "sefer_donus_hac_1700", title: "Hacıosman 17:00", timeInt: 1700 },
