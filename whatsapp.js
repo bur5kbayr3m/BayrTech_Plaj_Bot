@@ -93,48 +93,53 @@ async function sendMainMenu(phone) {
       }
     }
   };
-  return sendMessage(data);
+  return sendMessage(phone, data);
 }
 
+function getTurkeyTime() {
+  const d = new Date();
+  const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+  return new Date(utc + (3600000 * 3));
+}
+
+const TR_DAYS = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+
 async function sendDaySelectionList(phone) {
+  const t = getTurkeyTime();
+  const d0 = TR_DAYS[t.getDay()];
+  const d1 = TR_DAYS[(t.getDay() + 1) % 7];
+  const d2 = TR_DAYS[(t.getDay() + 2) % 7];
+  const d3 = TR_DAYS[(t.getDay() + 3) % 7];
+  const d4 = TR_DAYS[(t.getDay() + 4) % 7];
+
   const data = {
-    messaging_product: "whatsapp",
-    recipient_type: "individual",
-    to: phone,
     type: "interactive",
     interactive: {
       type: "list",
-      header: {
-        type: "text",
-        text: "📅 Seyahat Günü"
-      },
-      body: {
-        text: "Lütfen rezervasyon yapmak istediğiniz günü seçin:"
-      },
+      header: { type: "text", text: "📅 Rezervasyon Günü" },
+      body: { text: "Lütfen rezervasyon yapmak istediğiniz günü seçin:" },
       action: {
-        button: "📅 Gün Seçiniz",
+        button: "Gün Seçin",
         sections: [
           {
-            title: "Yaklaşan Günler",
+            title: "Önümüzdeki Günler",
             rows: [
-              { id: "bugun", title: "Bugün (Cuma)" },
-              { id: "yarin", title: "Yarın (Cumartesi)" },
-              { id: "pazartesi", title: "Pazartesi" },
-              { id: "sali", title: "Salı" }
+              { id: "day_bugun", title: `Bugün (${d0})` },
+              { id: "day_yarin", title: `Yarın (${d1})` },
+              { id: "day_gun3", title: d2 },
+              { id: "day_gun4", title: d3 },
+              { id: "day_gun5", title: d4 }
             ]
           }
         ]
       }
     }
   };
-  return sendMessage(data);
+  return sendMessage(phone, data);
 }
 
 async function sendFaqList(phone) {
   const data = {
-    messaging_product: "whatsapp",
-    recipient_type: "individual",
-    to: phone,
     type: "interactive",
     interactive: {
       type: "list",
@@ -161,31 +166,38 @@ async function sendFaqList(phone) {
       }
     }
   };
-  return sendMessage(data);
+  return sendMessage(phone, data);
 }
 
-async function sendFaqAnswer(phone, questionId) {
+async function sendFaqAnswer(phone, faqId) {
   let answer = "";
-  if (questionId === "faq_iptal") answer = "Rezervasyon iptalleri sefer saatinden en geç 12 saat önce yapılmalıdır. Aksi takdirde ücret iadesi yapılmaz.";
-  else if (questionId === "faq_evcil") answer = "Plajımıza küçük ırk evcil dostlarımızı tasmalı olmak şartıyla kabul ediyoruz.";
-  else if (questionId === "faq_yemek") answer = "Plaj alanına dışarıdan yiyecek ve içecek getirilmesi yasaktır.";
-  else if (questionId === "faq_konum") answer = "Plajımız Kilyos'ta bulunmaktadır. Konum: https://maps.app.goo.gl/ornek";
-  
-  answer += "\n\nAna menüye dönmek için 'Merhaba' yazabilirsiniz.";
+  if (faqId === 'faq_iptal') {
+    answer = "İptal işlemleri için en geç 1 gün öncesinden haber vermeniz gerekmektedir. Aynı gün yapılan iptallerde ücret iadesi yapılmaz.";
+  } else if (faqId === 'faq_evcil') {
+    answer = "Plajımıza maalesef evcil hayvan kabul edemiyoruz. Anlayışınız için teşekkür ederiz.";
+  } else if (faqId === 'faq_yemek') {
+    answer = "Plaj alanımıza dışarıdan yiyecek ve içecek getirilmesi yasaktır. İçeride restoran ve kafemiz mevcuttur.";
+  } else if (faqId === 'faq_konum') {
+    answer = "Plajımız Kilyos'ta yer almaktadır. Seferlerimiz Hacıosman Metro (Google Maps: https://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw) ve Mecidiyeköy Vakıfbank (https://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw) önünden kalkmaktadır.";
+  }
 
   const data = {
-    messaging_product: "whatsapp",
-    recipient_type: "individual",
-    to: phone,
-    type: "text",
-    text: { body: answer }
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: { text: answer },
+      action: {
+        buttons: [
+          { type: "reply", reply: { id: "menu_ana", title: "Ana Menü" } }
+        ]
+      }
+    }
   };
-  return sendMessage(data);
+  return sendMessage(phone, data);
 }
 
 async function sendContactSupport(phone) {
   const data = {
-    messaging_product: "whatsapp",
     recipient_type: "individual",
     to: phone,
     type: "text",

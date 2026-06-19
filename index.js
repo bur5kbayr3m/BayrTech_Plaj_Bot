@@ -76,7 +76,15 @@ app.post('/webhook', async (req, res) => {
           await sendProcessingMessage(phone, session.selected_day, session.selected_time, session.selected_count, session.selected_name);
           
           if (savedRes && savedRes.id && process.env.ADMIN_PHONE) {
-            await sendAdminApprovalRequest(process.env.ADMIN_PHONE, savedRes.id, phone, session.selected_day, session.selected_time, session.selected_count, session.selected_name);
+            let adminPhone = process.env.ADMIN_PHONE.trim().replace('+', '');
+            if (adminPhone.startsWith('0')) adminPhone = '90' + adminPhone.substring(1);
+            else if (!adminPhone.startsWith('90')) adminPhone = '90' + adminPhone;
+
+            try {
+              await sendAdminApprovalRequest(adminPhone, savedRes.id, phone, session.selected_day, session.selected_time, session.selected_count, session.selected_name);
+            } catch (adminErr) {
+              console.error("Admin mesajı gönderilemedi:", adminErr.message || adminErr);
+            }
           }
           
           resetSession(phone);
@@ -147,8 +155,14 @@ app.post('/webhook', async (req, res) => {
             const { sendFaqAnswer } = require('./whatsapp');
             await sendFaqAnswer(phone, replyId);
           }
+          // Main Menu Return
+          else if (replyId === 'menu_ana') {
+            session = resetSession(phone);
+            const { sendMainMenu } = require('./whatsapp');
+            await sendMainMenu(phone);
+          }
           // Reservation Flow Handle
-          else if (session.step === 1 && replyId.match(/^(bugun|yarin|pazartesi|sali)$/)) {
+          else if (session.step === 1 && replyId.startsWith('day_')) {
             session = updateSession(phone, { step: 2, selected_day: replyTitle });
             await sendTripSelectionList(phone, session.selected_day);
           } 
@@ -159,10 +173,7 @@ app.post('/webhook', async (req, res) => {
           else if (session.step === 3 && replyId.startsWith('grup_')) {
             if (replyId === 'grup_erkek_iptal') {
               const { sendMessage } = require('./whatsapp');
-              await sendMessage({
-                messaging_product: "whatsapp",
-                recipient_type: "individual",
-                to: phone,
+              await sendMessage(phone, {
                 type: "text",
                 text: { body: "❌ Üzgünüz, plajımıza damsız giriş yapılamadığı için sadece erkek gruplarının rezervasyonunu kabul edemiyoruz. Anlayışınız için teşekkür ederiz." }
               });
