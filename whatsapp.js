@@ -286,34 +286,37 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
   let allDonus = [];
   
   const isWeekend = dayTitle.includes('Cumartesi') || dayTitle.includes('Saturday') || dayTitle.includes('Pazar') || dayTitle.includes('Sunday');
+  const dayType = isWeekend ? 'Haftasonu' : 'Haftaici';
   
-  if (isWeekend) {
-    allGidis = [
-      { id: "sefer_gidis_mcd_0800", title: "🟣 Mecidiyeköy 08:00", timeInt: 800 },
-      { id: "sefer_gidis_hac_0830", title: "🟢 Hacıosman 08:30", timeInt: 830 },
-      { id: "sefer_gidis_hac_1030", title: "🟢 Hacıosman 10:30", timeInt: 1030 },
-      { id: "sefer_gidis_hac_1130", title: "🟢 Hacıosman 11:30", timeInt: 1130 }
-    ];
-  } else {
-    allGidis = [
-      { id: "sefer_gidis_mcd_0800", title: "🟣 Mecidiyeköy 08:00", timeInt: 800 },
-      { id: "sefer_gidis_hac_1030", title: "🟢 Hacıosman 10:30", timeInt: 1030 },
-      { id: "sefer_gidis_hac_1130", title: "🟢 Hacıosman 11:30", timeInt: 1130 }
-    ];
-  }
-
-  if (dayTitle.includes('Cumartesi') || dayTitle.includes('Saturday') || dayTitle.includes('Pazar') || dayTitle.includes('Sunday')) {
-    allDonus = [
-      { id: "sefer_donus_hac_1700", title: "Hacıosman 17:00", timeInt: 1700 },
-      { id: "sefer_donus_hac_1830", title: "Hacıosman 18:30", timeInt: 1830 },
-      { id: "sefer_donus_hac_1930", title: "Hacıosman 19:30", timeInt: 1930 }
-    ];
-  } else {
-    allDonus = [
-      { id: "sefer_donus_hac_1700", title: "Hacıosman 17:00", timeInt: 1700 },
-      { id: "sefer_donus_hac_1900", title: "Hacıosman 19:00", timeInt: 1900 }
-    ];
-  }
+  // Fetch dynamic templates from Supabase
+  const { getTripTemplates } = require('./supabase');
+  const templates = await getTripTemplates(dayType);
+  
+  // Map templates to interactive list format
+  templates.forEach(tmp => {
+    // Convert "08:30" to 830 integer for comparison
+    const timeParts = tmp.saat.split(':');
+    const timeInt = parseInt(timeParts[0]) * 100 + parseInt(timeParts[1]);
+    
+    // Create emoji prefix
+    let emoji = "📍";
+    if (tmp.kalkis_yeri.includes('Mecidiyeköy') || tmp.kalkis_yeri.includes('Mcd')) emoji = "🟣";
+    else if (tmp.kalkis_yeri.includes('Hacıosman') || tmp.kalkis_yeri.includes('Hac')) emoji = "🟢";
+    else if (tmp.kalkis_yeri.includes('Plaj')) emoji = "🏖️";
+    
+    // Format Title
+    let displayKalkis = tmp.kalkis_yeri;
+    if (tmp.yon === 'Donus') displayKalkis = "Dönüş"; // Since return is always from Beach, just show "Dönüş 17:00"
+    
+    const title = `${emoji} ${displayKalkis} ${tmp.saat}`;
+    const id = `sefer_${tmp.id}`;
+    
+    if (tmp.yon === 'Gidis') {
+      allGidis.push({ id, title, timeInt });
+    } else {
+      allDonus.push({ id, title, timeInt });
+    }
+  });
 
   let availableGidis = allGidis;
   let availableDonus = allDonus;

@@ -29,18 +29,26 @@ async function saveReservation({ phone, name, day, time, passenger_count }) {
   
   const dateStr = t.toISOString().split('T')[0];
   
-  // Parse time and yon
+  // Parse time and yon dynamically
   let saat = "10:30:00";
-  let kalkis = "Haciosman Metro";
+  const timeMatch = time.match(/\d{2}:\d{2}/);
+  if (timeMatch) {
+    saat = timeMatch[0] + ":00";
+  }
+  
   let yon = "Gidis";
-  if (time.includes('08:00')) { saat = "08:00:00"; kalkis = "Mecidiyekoy"; yon = "Gidis"; }
-  else if (time.includes('08:30')) { saat = "08:30:00"; kalkis = "Haciosman Metro"; yon = "Gidis"; }
-  else if (time.includes('10:30')) { saat = "10:30:00"; kalkis = "Haciosman Metro"; yon = "Gidis"; }
-  else if (time.includes('11:30')) { saat = "11:30:00"; kalkis = "Haciosman Metro"; yon = "Gidis"; }
-  else if (time.includes('17:00')) { saat = "17:00:00"; kalkis = "Plaj"; yon = "Donus"; }
-  else if (time.includes('18:30')) { saat = "18:30:00"; kalkis = "Plaj"; yon = "Donus"; }
-  else if (time.includes('19:00')) { saat = "19:00:00"; kalkis = "Plaj"; yon = "Donus"; }
-  else if (time.includes('19:30')) { saat = "19:30:00"; kalkis = "Plaj"; yon = "Donus"; }
+  if (time.toLowerCase().includes('dönüş') || time.toLowerCase().includes('donus')) {
+    yon = "Donus";
+  }
+  
+  let kalkis = "Haciosman Metro"; // fallback
+  if (time.toLowerCase().includes('mecidiyeköy') || time.toLowerCase().includes('mcd')) {
+    kalkis = "Mecidiyekoy";
+  } else if (time.toLowerCase().includes('plaj')) {
+    kalkis = "Plaj";
+  } else if (time.toLowerCase().includes('hacıosman') || time.toLowerCase().includes('hac')) {
+    kalkis = "Haciosman Metro";
+  }
 
   // Lookup trip
   let { data: trip } = await supabase
@@ -253,6 +261,44 @@ async function cleanUpDatabase() {
   }
 }
 
+async function getTripTemplates(dayType) {
+  if (!supabase) return [];
+  let query = supabase.from('trip_templates').select('*').eq('aktif', true);
+  if (dayType) {
+    // If it's Haftasonu, match Haftasonu or Hergün
+    // If Haftaiçi, match Haftaiçi or Hergün
+    query = query.in('gun_tipi', [dayType, 'Hergün']);
+  }
+  const { data, error } = await query.order('saat', { ascending: true });
+  if (error) {
+    console.error('Error fetching trip templates:', error);
+    return [];
+  }
+  return data;
+}
+
+async function addTripTemplate(yon, kalkis_yeri, saat, gun_tipi) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { data, error } = await supabase
+    .from('trip_templates')
+    .insert([{ yon, kalkis_yeri, saat, gun_tipi, aktif: true }])
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+async function removeTripTemplate(saat, kalkis_yeri) {
+  if (!supabase) throw new Error('Supabase not configured');
+  // Just disable it instead of hard delete to keep history if needed, or hard delete. Hard delete is simpler.
+  const { error } = await supabase
+    .from('trip_templates')
+    .delete()
+    .eq('saat', saat)
+    .eq('kalkis_yeri', kalkis_yeri);
+  if (error) throw error;
+}
+
 module.exports = {
   supabase,
   saveReservation,
@@ -262,5 +308,8 @@ module.exports = {
   getDailyReservations,
   getTripCapacity,
   increaseTripCapacity,
-  cleanUpDatabase
+  cleanUpDatabase,
+  getTripTemplates,
+  addTripTemplate,
+  removeTripTemplate
 };

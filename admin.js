@@ -1,0 +1,205 @@
+const { sendMessage } = require('./api');
+const { updateSession, resetSession } = require('./state');
+const { addTripTemplate, removeTripTemplate, getTripTemplates } = require('./supabase');
+
+async function sendAdminMainMenu(phone) {
+  const data = {
+    messaging_product: "whatsapp",
+    recipient_type: "individual",
+    to: phone,
+    type: 'interactive',
+    interactive: {
+      type: "button",
+      body: { text: "⚙️ *Admin Paneli*\n\nMenüdeki saatleri yönetmek için bir işlem seçin:" },
+      action: {
+        buttons: [
+          { type: "reply", reply: { id: "admin_saat_ekle", title: "Saat Ekle" } },
+          { type: "reply", reply: { id: "admin_saat_sil", title: "Saat Sil" } },
+          { type: "reply", reply: { id: "admin_iptal", title: "İptal" } }
+        ]
+      }
+    }
+  };
+  return sendMessage(data);
+}
+
+async function handleAdminFlow(phone, message, session) {
+  // Check if it's a cancellation
+  if (message.type === 'interactive' && message.interactive.button_reply && message.interactive.button_reply.id === 'admin_iptal') {
+    resetSession(phone);
+    return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "❌ Admin işlemi iptal edildi." } });
+  }
+
+  // Step 1: Main Menu Selection
+  if (session.admin_step === 1 && message.type === 'interactive') {
+    const action = message.interactive.button_reply.id; // admin_saat_ekle or admin_saat_sil
+    
+    if (action === 'admin_saat_sil') {
+      // Show list of existing templates to delete
+      const templates = await getTripTemplates();
+      if (templates.length === 0) {
+        resetSession(phone);
+        return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "Sistemde silinecek kayıtlı saat bulunmuyor." } });
+      }
+      
+      const rows = templates.slice(0, 10).map(t => ({
+        id: `del_tmp_${t.id}`,
+        title: `${t.saat} ${t.kalkis_yeri}`,
+        description: `${t.gun_tipi} - ${t.yon}`
+      }));
+      
+      updateSession(phone, { admin_step: 99 }); // Deletion step
+      return sendMessage({
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "interactive",
+        interactive: {
+          type: "list",
+          header: { type: "text", text: "Saat Sil" },
+          body: { text: "Menüden silmek istediğiniz saati seçin (Son 10 saat listelenir):" },
+          footer: { text: "Seçim yapın" },
+          action: { button: "Saat Seç", sections: [{ title: "Kayıtlı Saatler", rows: rows }] }
+        }
+      });
+    }
+
+    if (action === 'admin_saat_ekle') {
+      updateSession(phone, { admin_step: 2, admin_action: 'add' });
+      // Ask Gun Tipi
+      return sendMessage({
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "interactive",
+        interactive: {
+          type: "button",
+          body: { text: "📅 Hangi gün tipi için saat ekliyorsunuz?" },
+          action: {
+            buttons: [
+              { type: "reply", reply: { id: "add_gun_haftasonu", title: "Haftasonu" } },
+              { type: "reply", reply: { id: "add_gun_haftaici", title: "Haftaiçi" } },
+              { type: "reply", reply: { id: "add_gun_hergun", title: "Hergün" } }
+            ]
+          }
+        }
+      });
+    }
+  }
+
+  // Deletion logic
+  if (session.admin_step === 99 && message.type === 'interactive' && message.interactive.list_reply) {
+    const title = message.interactive.list_reply.title; // e.g. "08:30 Haciosman Metro"
+    const parts = title.split(' ');
+    const saat = parts[0];
+    const kalkis = parts.slice(1).join(' ');
+    
+    try {
+      await removeTripTemplate(saat, kalkis);
+      resetSession(phone);
+      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: `✅ ${saat} ${kalkis} menüden başarıyla SİLİNDİ.` } });
+    } catch (e) {
+      resetSession(phone);
+      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "❌ Silme işlemi başarısız oldu." } });
+    }
+  }
+
+  // Step 2: Gun Tipi Selected -> Ask Yon
+  if (session.admin_step === 2 && message.type === 'interactive') {
+    const gunId = message.interactive.button_reply.id;
+    let gun = "Haftasonu";
+    if (gunId.includes('haftaici')) gun = "Haftaici";
+    if (gunId.includes('hergun')) gun = "Hergün";
+    
+    updateSession(phone, { admin_step: 3, admin_gun: gun });
+    
+    return sendMessage({
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: { text: "Yönü seçin:" },
+        action: {
+          buttons: [
+            { type: "reply", reply: { id: "add_yon_gidis", title: "Gidiş" } },
+            { type: "reply", reply: { id: "add_yon_donus", title: "Dönüş" } }
+          ]
+        }
+      }
+    });
+  }
+
+  // Step 3: Yon Selected -> Ask Kalkis Yeri
+  if (session.admin_step === 3 && message.type === 'interactive') {
+    const yonId = message.interactive.button_reply.id;
+    const yon = yonId.includes('gidis') ? "Gidis" : "Donus";
+    
+    updateSession(phone, { admin_step: 4, admin_yon: yon });
+    
+    return sendMessage({
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: { text: "Kalkış yerini seçin:" },
+        action: {
+          buttons: [
+            { type: "reply", reply: { id: "add_kalkis_mcd", title: "Mecidiyeköy" } },
+            { type: "reply", reply: { id: "add_kalkis_hac", title: "Hacıosman" } },
+            { type: "reply", reply: { id: "add_kalkis_plaj", title: "Plaj" } }
+          ]
+        }
+      }
+    });
+  }
+
+  // Step 4: Kalkis Yeri Selected -> Ask Saat (Text)
+  if (session.admin_step === 4 && message.type === 'interactive') {
+    const kalkisId = message.interactive.button_reply.id;
+    let kalkis = "Haciosman Metro";
+    if (kalkisId.includes('mcd')) kalkis = "Mecidiyeköy";
+    if (kalkisId.includes('plaj')) kalkis = "Plaj";
+    
+    updateSession(phone, { admin_step: 5, admin_kalkis: kalkis });
+    
+    return sendMessage({
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "text",
+      text: { body: "Lütfen eklenecek saati 00:00 formatında yazıp gönderin (Örn: 08:30 veya 17:00):" }
+    });
+  }
+
+  // Step 5: Saat Entered (Text) -> Save to DB
+  if (session.admin_step === 5 && message.type === 'text') {
+    const saatInput = message.text.body.trim();
+    
+    // Validate format
+    if (!/^\d{2}:\d{2}$/.test(saatInput)) {
+      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "Geçersiz saat formatı. Lütfen 00:00 formatında girin (Örn: 08:30):" } });
+    }
+
+    try {
+      await addTripTemplate(session.admin_yon, session.admin_kalkis, saatInput, session.admin_gun);
+      resetSession(phone);
+      return sendMessage({
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "text",
+        text: { body: `🎉 Başarılı! \n\n${session.admin_gun} - ${session.admin_yon}\n${session.admin_kalkis} - ${saatInput}\n\nSaat başarıyla eklendi ve anında WhatsApp menüsüne yansıdı.` }
+      });
+    } catch (e) {
+      console.error(e);
+      resetSession(phone);
+      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "❌ Kayıt sırasında bir hata oluştu." } });
+    }
+  }
+
+  // Fallback
+  return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "Admin işlemi anlaşılamadı. 'İptal' diyerek çıkabilirsiniz." } });
+}
+
+module.exports = {
+  sendAdminMainMenu,
+  handleAdminFlow
+};

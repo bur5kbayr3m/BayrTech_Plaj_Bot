@@ -63,8 +63,23 @@ app.post('/webhook', async (req, res) => {
       const phone = message.from;
 
       let session = getSession(phone);
+      
+      const { sendAdminMainMenu, handleAdminFlow } = require('./admin');
+      
+      // Admin Interception
+      const isAdmin = process.env.ADMIN_PHONE && phone.includes(process.env.ADMIN_PHONE.trim().replace('+', '').replace(/^0/, ''));
+      
+      if (session.admin_step > 0) {
+        return handleAdminFlow(phone, message, session);
+      }
 
       if (message.type === 'text') {
+        const textLower = message.text.body.toLowerCase().trim();
+        if (isAdmin && (textLower === 'ayarlar' || textLower === 'admin')) {
+          updateSession(phone, { admin_step: 1 });
+          return sendAdminMainMenu(phone);
+        }
+
         if (session && session.step === 4) {
           const nameInput = message.text.body;
           session = updateSession(phone, { step: 5, selected_name: nameInput });
