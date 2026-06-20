@@ -70,14 +70,16 @@ app.post('/webhook', async (req, res) => {
       const isAdmin = process.env.ADMIN_PHONE && phone.includes(process.env.ADMIN_PHONE.trim().replace('+', '').replace(/^0/, ''));
       
       if (session.admin_step > 0) {
-        return handleAdminFlow(phone, message, session);
+        await handleAdminFlow(phone, message, session);
+        return res.sendStatus(200);
       }
 
       if (message.type === 'text') {
         const textLower = message.text.body.toLowerCase().trim();
         if (isAdmin && (textLower === 'ayarlar' || textLower === 'admin')) {
           updateSession(phone, { admin_step: 1 });
-          return sendAdminMainMenu(phone);
+          await sendAdminMainMenu(phone);
+          return res.sendStatus(200);
         }
 
         if (session && session.step === 4) {
