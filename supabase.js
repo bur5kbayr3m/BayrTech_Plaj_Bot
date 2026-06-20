@@ -118,7 +118,14 @@ async function updateReservationStatus(id, newStatus) {
     .from('reservations')
     .update({ durum: newStatus })
     .eq('id', id)
-    .select()
+    .select(`
+      *,
+      trips:sefer_id (
+        tarih,
+        saat,
+        kalkis_yeri
+      )
+    `)
     .single();
     
   if (error) throw error;

@@ -509,17 +509,26 @@ Bu rezervasyonu onaylıyor musunuz?` },
   return sendMessage(data);
 }
 
-async function sendStatusUpdateToUser(phone, status, isHaciosman, lang = 'tr') {
+async function sendStatusUpdateToUser(phone, status, isHaciosman, lang = 'tr', updatedRes = null) {
   let bodyText = "";
   const mapsLink = isHaciosman 
       ? "https://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw"
       : "https://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw";
   const durak = isHaciosman ? "Hacıosman Metro" : "Mecidiyeköy";
 
+  let detailsText = "";
+  if (updatedRes) {
+    const saat = updatedRes.trips && updatedRes.trips.saat ? updatedRes.trips.saat.substring(0, 5) : "";
+    const tarih = updatedRes.trips && updatedRes.trips.tarih ? updatedRes.trips.tarih : "";
+    
+    detailsText = lang === 'en'
+      ? `\n👤 *Name:* ${updatedRes.ad_soyad}\n👥 *Passengers:* ${updatedRes.kisi_sayisi}\n📅 *Date:* ${tarih}\n⏱️ *Time:* ${saat}\n`
+      : `\n👤 *İsim:* ${updatedRes.ad_soyad}\n👥 *Kişi Sayısı:* ${updatedRes.kisi_sayisi}\n📅 *Tarih:* ${tarih}\n⏱️ *Saat:* ${saat}\n`;
+  }
+
   if (status === 'Onaylandı') {
     bodyText = lang === 'en'
-      ? `🎉 *Your Reservation is Confirmed!*
-
+      ? `🎉 *Your Reservation is Confirmed!*\n${detailsText}
 Selected Stop: *${durak}*
 
 Please be at the departure point 15 minutes before the shuttle time.
@@ -528,8 +537,7 @@ Please be at the departure point 15 minutes before the shuttle time.
 ${mapsLink}
 
 Have a great holiday and stay healthy! 🌊`
-      : `🎉 *Rezervasyonunuz Onaylandı!*
-
+      : `🎉 *Rezervasyonunuz Onaylandı!*\n${detailsText}
 Seçtiğiniz Durak: *${durak}*
 
 Servis saatinden 15 dakika önce kalkış noktasında olmanızı rica ederiz.
@@ -541,12 +549,13 @@ ${mapsLink}
   } else {
     bodyText = lang === 'en'
       ? `❌ *Your Reservation is Rejected.*
-
+${detailsText}
 Unfortunately, our quota for your selected time is full or the shuttle was cancelled. Please contact us for details.`
       : `❌ *Rezervasyonunuz Reddedildi.*
-
+${detailsText}
 Maalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edilmiştir. Lütfen bizimle iletişime geçin.`;
   }
+  
   if (status === 'Onaylandı') {
     const data = {
       messaging_product: "whatsapp",
@@ -558,7 +567,9 @@ Maalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edi
         body: { text: bodyText },
         action: {
           buttons: [
-            { type: "reply", reply: { id: `cancel_req`, title: lang === 'en' ? "❌ Cancel Request" : "❌ İptal Talebi" } }
+            { type: "reply", reply: { id: `cancel_req`, title: lang === 'en' ? "❌ Cancel Request" : "❌ İptal Talebi" } },
+            { type: "reply", reply: { id: `menu_sss`, title: lang === 'en' ? "❓ FAQ" : "❓ SSS" } },
+            { type: "reply", reply: { id: `menu_canli_destek`, title: lang === 'en' ? "📞 Support" : "📞 Canlı Destek" } }
           ]
         }
       }
@@ -579,24 +590,32 @@ Maalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edi
         body: { text: bodyText },
         action: {
           buttons: [
-            { type: "reply", reply: { id: `main_menu`, title: lang === 'en' ? "🔄 Reselect" : "🔄 Yeniden Seç" } }
+            { type: "reply", reply: { id: `menu_ana`, title: lang === 'en' ? "🏠 Main Menu" : "🏠 Ana Menü" } }
           ]
         }
       }
     };
     return sendMessage(data);
   } else {
+    // Reddedildi
     const data = {
       messaging_product: "whatsapp",
       recipient_type: "individual",
       to: phone,
-      type: "text",
-      text: { body: bodyText }
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: { text: bodyText },
+        action: {
+          buttons: [
+            { type: "reply", reply: { id: `menu_canli_destek`, title: lang === 'en' ? "📞 Live Support" : "📞 Canlı Destek" } }
+          ]
+        }
+      }
     };
     return sendMessage(data);
   }
 }
-
 async function sendPdfDocument(adminPhone, fileUrl, fileName) {
   const data = {
     messaging_product: "whatsapp",

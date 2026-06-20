@@ -248,10 +248,11 @@ app.post('/webhook', async (req, res) => {
             try {
               const updatedRes = await updateReservationStatus(reservationId, newStatus);
               if (updatedRes && updatedRes.tel_no) {
-                const isHaciosman = updatedRes.lokasyon_adi ? updatedRes.lokasyon_adi.toLowerCase().includes('hacıosman') : true;
+                const kalkisYeri = updatedRes.trips && updatedRes.trips.kalkis_yeri ? updatedRes.trips.kalkis_yeri.toLowerCase() : '';
+                const isHaciosman = kalkisYeri.includes('hacıosman') || kalkisYeri.includes('haciosman');
                 
                 const customerSession = getSession(updatedRes.tel_no);
-                await sendStatusUpdateToUser(updatedRes.tel_no, isFull ? 'Dolu' : newStatus, isHaciosman, customerSession.lang);
+                await sendStatusUpdateToUser(updatedRes.tel_no, isFull ? 'Dolu' : newStatus, isHaciosman, customerSession.lang, updatedRes);
                 
                 let feedbackText = isApproved 
                   ? "✅ Rezervasyon onaylandı ve müşteriye bilgilendirme mesajı gönderildi."
