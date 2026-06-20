@@ -190,12 +190,14 @@ async function sendFaqList(phone, lang = 'tr') {
     { id: "faq_iptal", title: "Cancellation Policy?" },
     { id: "faq_shuttle", title: "Is the shuttle paid?" },
     { id: "faq_yemek", title: "Outside Food/Drink?" },
-    { id: "faq_konum", title: "Location Information" }
+    { id: "faq_konum", title: "Location Information" },
+    { id: "faq_saat", title: "Where is the shuttle?" }
   ] : [
     { id: "faq_iptal", title: "İptal Şartları Neler?" },
     { id: "faq_shuttle", title: "Servis ücretli mi?" },
     { id: "faq_yemek", title: "Yiyecek ve İçecek" },
-    { id: "faq_konum", title: "Konum Bilgisi" }
+    { id: "faq_konum", title: "Konum Bilgisi" },
+    { id: "faq_saat", title: "Servis aracı nerede?" }
   ];
 
   const data = {
@@ -236,6 +238,10 @@ async function sendFaqAnswer(phone, faqId, lang = 'tr') {
     answer = lang === 'en' 
       ? `Our beach is located in Kilyos. Shuttles depart from:\n\n📍 Hacıosman Metro:\nhttps://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw\n\n📍 Mecidiyeköy Vakıfbank:\nhttps://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw` 
       : `Plajımız Kilyos'ta yer almaktadır. Seferlerimiz aşağıdaki noktalardan kalkmaktadır:\n\n📍 Hacıosman Metro:\nhttps://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw\n\n📍 Mecidiyeköy Vakıfbank:\nhttps://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw`;
+  } else if (faqId === 'faq_saat') {
+    answer = lang === 'en' 
+      ? "Our shuttle vehicles depart exactly on time, there are no delays. Please be ready at the designated departure point 10-15 minutes before the departure time." 
+      : "Servis araçlarımız tam saatinde kalkış yapmaktadır, herhangi bir aksama olmamaktadır. Lütfen kalkış saatinden 10-15 dakika önce belirlenen kalkış noktasında hazır bulununuz.";
   }
 
   const menuTitle = lang === 'en' ? "Main Menu" : "Ana Menü";
