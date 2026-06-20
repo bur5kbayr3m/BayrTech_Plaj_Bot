@@ -1,4 +1,4 @@
-const { sendMessage } = require('./api');
+const { sendMessage } = require('./whatsapp');
 const { updateSession, resetSession } = require('./state');
 const { addTripTemplate, removeTripTemplate, getTripTemplates } = require('./supabase');
 
