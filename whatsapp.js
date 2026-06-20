@@ -350,6 +350,9 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
     : "\n\n🌆 *Dönüş Sefer Saatleri (Sadece Bilgi):*\n";
   if (availableDonus.length > 0) {
     donusText += availableDonus.map(t => "• " + t.title).join("\n");
+    donusText += lang === 'en' 
+      ? "\n_Note: Return trips do not require reservations. You can board the vehicle 10-15 mins before departure._"
+      : "\n_Not: Dönüşte rezervasyon yoktur. Kalkıştan 10-15 dk önce araca doğrudan binebilirsiniz._";
   } else {
     donusText += lang === 'en' ? "No return shuttles available." : "Uygun dönüş seferi bulunmamaktadır.";
   }
