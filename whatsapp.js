@@ -240,8 +240,8 @@ async function sendFaqAnswer(phone, faqId, lang = 'tr') {
       : `Plajımız Kilyos'ta yer almaktadır. Seferlerimiz aşağıdaki noktalardan kalkmaktadır:\n\n📍 Hacıosman Metro:\nhttps://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw\n\n📍 Mecidiyeköy Vakıfbank:\nhttps://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw`;
   } else if (faqId === 'faq_saat') {
     answer = lang === 'en' 
-      ? "Our shuttle vehicles depart exactly on time, there are no delays. Please be ready at the designated departure point 10-15 minutes before the departure time." 
-      : "Servis araçlarımız tam saatinde kalkış yapmaktadır, herhangi bir aksama olmamaktadır. Lütfen kalkış saatinden 10-15 dakika önce belirlenen kalkış noktasında hazır bulununuz.";
+      ? "Please be ready at the designated departure point 10-15 minutes before the departure time. If you cannot find the vehicle, you can directly call 0545 578 41 53 to reach the shuttle." 
+      : "Lütfen kalkış saatinden 10-15 dakika önce belirlenen kalkış noktasında hazır bulununuz. Aracı bulamamanız durumunda servise ulaşmak için doğrudan 0545 578 41 53 numarasını arayabilirsiniz.";
   }
 
   const menuTitle = lang === 'en' ? "Main Menu" : "Ana Menü";
