@@ -199,7 +199,83 @@ async function handleAdminFlow(phone, message, session) {
   return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "Admin işlemi anlaşılamadı. 'İptal' diyerek çıkabilirsiniz." } });
 }
 
+const { getDailyReservations } = require('./supabase');
+
+async function sendDailySummaryToAdmin(phone) {
+  try {
+    const t = getTurkeyTime();
+    const todayStr = t.toISOString().split('T')[0];
+    
+    // Fetch today's reservations
+    const reservations = await getDailyReservations(todayStr);
+    
+    // Filter only active ones (Beklemede or Onaylandı)
+    const activeRes = reservations.filter(r => r.durum === 'Beklemede' || r.durum === 'Onaylandı');
+    
+    if (activeRes.length === 0) {
+      return sendMessage({
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "text",
+        text: { body: "📅 *Bugün için kayıtlı rezervasyon bulunmuyor.*" }
+      });
+    }
+
+    // Group by trip
+    const grouped = {};
+    activeRes.forEach(res => {
+      const trip = res.trips || {};
+      const saat = trip.saat ? trip.saat.substring(0, 5) : 'Bilinmeyen Saat';
+      const kalkis = trip.kalkis_yeri || 'Bilinmeyen Durak';
+      const yon = trip.yon || 'Bilinmeyen Yön';
+      
+      const key = `${saat} - ${kalkis} (${yon})`;
+      if (!grouped[key]) {
+        grouped[key] = {
+          title: key,
+          totalPax: 0,
+          passengers: []
+        };
+      }
+      grouped[key].totalPax += (res.kisi_sayisi || 1);
+      grouped[key].passengers.push(`• ${res.ad_soyad} (${res.kisi_sayisi} Kişi) - ${res.durum}`);
+    });
+
+    // Format message
+    let msgBody = `📊 *BUGÜNÜN REZERVASYON ÖZETİ*\n_${todayStr}_\n\n`;
+    
+    // Sort keys by time
+    const sortedKeys = Object.keys(grouped).sort();
+    
+    sortedKeys.forEach(key => {
+      const group = grouped[key];
+      msgBody += `🚐 *${group.title}* (Toplam: ${group.totalPax} Kişi)\n`;
+      group.passengers.forEach(p => {
+        msgBody += `${p}\n`;
+      });
+      msgBody += `\n`;
+    });
+
+    return sendMessage({
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "text",
+      text: { body: msgBody }
+    });
+    
+  } catch (err) {
+    console.error("Error generating daily summary:", err);
+    return sendMessage({
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "text",
+      text: { body: "❌ Özet alınırken bir hata oluştu." }
+    });
+  }
+}
+
 module.exports = {
   sendAdminMainMenu,
-  handleAdminFlow
+  handleAdminFlow,
+  sendDailySummaryToAdmin
 };
