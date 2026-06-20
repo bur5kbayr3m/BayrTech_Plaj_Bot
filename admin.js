@@ -211,55 +211,75 @@ async function sendDailySummaryToAdmin(phone) {
     const t = getTurkeyTime();
     const todayStr = t.toISOString().split('T')[0];
     
-    // Fetch today's reservations
-    const reservations = await getDailyReservations(todayStr);
+    const tomorrow = new Date(t);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
     
-    // Filter only active ones (Beklemede or Onaylandı)
-    const activeRes = reservations.filter(r => r.durum === 'Beklemede' || r.durum === 'Onaylandı');
+    // Fetch reservations
+    const resToday = await getDailyReservations(todayStr);
+    const resTomorrow = await getDailyReservations(tomorrowStr);
     
-    if (activeRes.length === 0) {
-      return sendMessage({
-        messaging_product: "whatsapp",
-        to: phone,
-        type: "text",
-        text: { body: "📅 *Bugün için kayıtlı rezervasyon bulunmuyor.*" }
+    // Filter active ones
+    const activeToday = resToday.filter(r => r.durum === 'Beklemede' || r.durum === 'Onaylandı');
+    const activeTomorrow = resTomorrow.filter(r => r.durum === 'Beklemede' || r.durum === 'Onaylandı');
+    
+    let msgBody = `📊 *REZERVASYON ÖZETİ*\n\n`;
+
+    // --- TODAY ---
+    msgBody += `📅 *BUGÜN (${todayStr})*\n`;
+    if (activeToday.length === 0) {
+      msgBody += `_Bugün için kayıtlı rezervasyon bulunmuyor._\n\n`;
+    } else {
+      const groupedToday = {};
+      activeToday.forEach(res => {
+        const trip = res.trips || {};
+        const saat = trip.saat ? trip.saat.substring(0, 5) : 'Bilinmeyen Saat';
+        const kalkis = trip.kalkis_yeri || 'Bilinmeyen Durak';
+        const yon = trip.yon || 'Bilinmeyen Yön';
+        const key = `${saat} - ${kalkis} (${yon})`;
+        
+        if (!groupedToday[key]) groupedToday[key] = { title: key, totalPax: 0, passengers: [] };
+        groupedToday[key].totalPax += (res.kisi_sayisi || 1);
+        groupedToday[key].passengers.push(`• ${res.ad_soyad} (${res.kisi_sayisi} Kişi) - ${res.durum}`);
+      });
+
+      const sortedToday = Object.keys(groupedToday).sort();
+      sortedToday.forEach(key => {
+        const group = groupedToday[key];
+        msgBody += `🚐 *${group.title}* (Toplam: ${group.totalPax} Kişi)\n`;
+        group.passengers.forEach(p => { msgBody += `${p}\n`; });
+        msgBody += `\n`;
       });
     }
-
-    // Group by trip
-    const grouped = {};
-    activeRes.forEach(res => {
-      const trip = res.trips || {};
-      const saat = trip.saat ? trip.saat.substring(0, 5) : 'Bilinmeyen Saat';
-      const kalkis = trip.kalkis_yeri || 'Bilinmeyen Durak';
-      const yon = trip.yon || 'Bilinmeyen Yön';
-      
-      const key = `${saat} - ${kalkis} (${yon})`;
-      if (!grouped[key]) {
-        grouped[key] = {
-          title: key,
-          totalPax: 0,
-          passengers: []
-        };
-      }
-      grouped[key].totalPax += (res.kisi_sayisi || 1);
-      grouped[key].passengers.push(`• ${res.ad_soyad} (${res.kisi_sayisi} Kişi) - ${res.durum}`);
-    });
-
-    // Format message
-    let msgBody = `📊 *BUGÜNÜN REZERVASYON ÖZETİ*\n_${todayStr}_\n\n`;
     
-    // Sort keys by time
-    const sortedKeys = Object.keys(grouped).sort();
-    
-    sortedKeys.forEach(key => {
-      const group = grouped[key];
-      msgBody += `🚐 *${group.title}* (Toplam: ${group.totalPax} Kişi)\n`;
-      group.passengers.forEach(p => {
-        msgBody += `${p}\n`;
+    msgBody += `➖➖➖➖➖➖➖➖\n\n`;
+
+    // --- TOMORROW ---
+    msgBody += `📅 *YARIN (${tomorrowStr})*\n`;
+    if (activeTomorrow.length === 0) {
+      msgBody += `_Yarın için henüz rezervasyon bulunmuyor._\n`;
+    } else {
+      const groupedTomorrow = {};
+      activeTomorrow.forEach(res => {
+        const trip = res.trips || {};
+        const saat = trip.saat ? trip.saat.substring(0, 5) : 'Bilinmeyen Saat';
+        const kalkis = trip.kalkis_yeri || 'Bilinmeyen Durak';
+        const yon = trip.yon || 'Bilinmeyen Yön';
+        const key = `${saat} - ${kalkis} (${yon})`;
+        
+        if (!groupedTomorrow[key]) groupedTomorrow[key] = { title: key, totalPax: 0, passengers: [] };
+        groupedTomorrow[key].totalPax += (res.kisi_sayisi || 1);
+        groupedTomorrow[key].passengers.push(`• ${res.ad_soyad} (${res.kisi_sayisi} Kişi) - ${res.durum}`);
       });
-      msgBody += `\n`;
-    });
+
+      const sortedTomorrow = Object.keys(groupedTomorrow).sort();
+      sortedTomorrow.forEach(key => {
+        const group = groupedTomorrow[key];
+        msgBody += `🚐 *${group.title}* (Toplam: ${group.totalPax} Kişi)\n`;
+        group.passengers.forEach(p => { msgBody += `${p}\n`; });
+        msgBody += `\n`;
+      });
+    }
 
     return sendMessage({
       messaging_product: "whatsapp",

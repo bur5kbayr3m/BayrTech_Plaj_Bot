@@ -137,16 +137,15 @@ async function updateReservationStatus(id, newStatus) {
   return data;
 }
 
-async function getDailyReservations() {
-  if (!supabase) throw new Error('Supabase not configured');
+async function getDailyReservations(targetDateStr) {
+  if (!supabase) return [];
   
-  // Calculate today's date for filtering (since cron runs at 00:00, the day just started)
-  const d = new Date();
-  const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
-  const t = new Date(utc + (3600000 * 3)); // Turkey time
-  // No +1 day. 00:00'da çalıştığı için bulunduğumuz günü (başlayan günü) istiyoruz.
-  const targetDateStr = t.toISOString().split('T')[0];
-  
+  if (!targetDateStr) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    targetDateStr = tomorrow.toISOString().split('T')[0];
+  }
+
   const { data, error } = await supabase
     .from('reservations')
     .select(`
@@ -157,12 +156,11 @@ async function getDailyReservations() {
         kalkis_yeri,
         varis_yeri
       )
-    `)
-    .eq('durum', 'Onaylandı');
+    `);
     
   if (error) throw error;
   
-  // Filter for today's trips in memory
+  // Filter for target date in memory
   return data.filter(res => res.trips && res.trips.tarih === targetDateStr);
 }
 

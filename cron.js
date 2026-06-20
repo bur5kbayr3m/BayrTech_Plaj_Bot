@@ -103,7 +103,8 @@ async function runDailyReport() {
   
   console.log('Günlük PDF Raporu oluşturuluyor...');
   try {
-    const reservations = await getDailyReservations();
+    const allReservations = await getDailyReservations();
+    const reservations = allReservations.filter(r => r.durum === 'Onaylandı');
     
     const fileName = `Rapor_${new Date().toISOString().split('T')[0]}.pdf`;
     
