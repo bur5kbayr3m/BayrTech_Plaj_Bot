@@ -1,6 +1,11 @@
 const { sendMessage } = require('./whatsapp');
-const { updateSession, resetSession, getTurkeyTime } = require('./state');
+const { updateSession, resetSession } = require('./state');
 const { addTripTemplate, removeTripTemplate, getTripTemplates } = require('./supabase');
+
+function getTurkeyTime() {
+  const d = new Date();
+  return new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));
+}
 
 async function sendAdminMainMenu(phone) {
   const data = {
