@@ -15,16 +15,17 @@ async function sendAdminMainMenu(phone) {
     type: 'interactive',
     interactive: {
       type: "button",
-      body: { text: "⚙️ *Admin Paneli*\n\nMenüdeki saatleri yönetmek için bir işlem seçin:" },
+      body: { text: "⚙️ *ADMİN PANELİ*\n\nSistemi yönetmek için aşağıdaki butonları kullanabilirsiniz.\n\n_Yeni sefer ekleyebilir, mevcut bir seferi silebilir veya tüm seferleri görüntüleyebilirsiniz._" },
       action: {
         buttons: [
-          { type: "reply", reply: { id: "admin_saat_ekle", title: "Saat Ekle" } },
-          { type: "reply", reply: { id: "admin_saat_sil", title: "Saat Sil" } },
-          { type: "reply", reply: { id: "admin_iptal", title: "İptal" } }
+          { type: "reply", reply: { id: "admin_saat_ekle", title: "➕ Sefer Ekle" } },
+          { type: "reply", reply: { id: "admin_saat_sil", title: "➖ Sefer Sil" } },
+          { type: "reply", reply: { id: "admin_list_trips", title: "📋 Seferleri Gör" } }
         ]
       }
     }
   };
+  updateSession(phone, { admin_step: 0 });
   return sendMessage(data);
 }
 
@@ -38,6 +39,38 @@ async function handleAdminFlow(phone, message, session) {
   // Step 1: Main Menu Selection
   if (session.admin_step === 1 && message.type === 'interactive') {
     const action = message.interactive.button_reply.id; // admin_saat_ekle or admin_saat_sil
+    
+    if (action === 'admin_list_trips') {
+      try {
+        // Hergün includes all trips with the updated getTripTemplates
+        const templates = await getTripTemplates('Hergün');
+        if (templates.length === 0) {
+          return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "Sistemde hiç sefer bulunmamaktadır." } });
+        }
+        
+        let msg = "📋 *TÜM SEFERLER*\n\n";
+        const groups = { "Haftaici": [], "Haftasonu": [], "Hergün": [] };
+        
+        templates.forEach(t => {
+          if (groups[t.gun_tipi]) {
+            groups[t.gun_tipi].push(`• ${t.saat} - ${t.kalkis_yeri} (${t.yon})`);
+          }
+        });
+        
+        ['Hergün', 'Haftaici', 'Haftasonu'].forEach(g => {
+          if (groups[g].length > 0) {
+            msg += `📅 *${g.toUpperCase()}*\n`;
+            msg += groups[g].join("\n");
+            msg += "\n\n";
+          }
+        });
+        
+        return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: msg } });
+      } catch (err) {
+        console.error(err);
+        return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "Seferler alınırken hata oluştu." } });
+      }
+    }
     
     if (action === 'admin_saat_sil') {
       // Show list of existing templates to delete
@@ -180,18 +213,20 @@ async function handleAdminFlow(phone, message, session) {
     const saatInput = message.text.body.trim();
     
     // Validate format
-    if (!/^\d{2}:\d{2}$/.test(saatInput)) {
-      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "Geçersiz saat formatı. Lütfen 00:00 formatında girin (Örn: 08:30):" } });
+    if (!/^\d{1,2}[:.]\d{2}$/.test(saatInput)) {
+      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "❌ Hatalı format. Lütfen saati 08:30, 14:00 şeklinde yazınız." } });
     }
+    
+    const formattedSaat = saatInput.replace('.', ':');
 
     try {
-      await addTripTemplate(session.admin_yon, session.admin_kalkis, saatInput, session.admin_gun);
+      await addTripTemplate(session.admin_yon, session.admin_kalkis, formattedSaat, session.admin_gun);
       resetSession(phone);
       return sendMessage({
         messaging_product: "whatsapp",
         to: phone,
         type: "text",
-        text: { body: `🎉 Başarılı! \n\n${session.admin_gun} - ${session.admin_yon}\n${session.admin_kalkis} - ${saatInput}\n\nSaat başarıyla eklendi ve anında WhatsApp menüsüne yansıdı.` }
+        text: { body: `🎉 Başarılı! \n\n${session.admin_gun} - ${session.admin_yon}\n${session.admin_kalkis} - ${formattedSaat}\n\nSaat başarıyla eklendi ve anında WhatsApp menüsüne yansıdı.` }
       });
     } catch (e) {
       console.error(e);
