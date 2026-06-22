@@ -514,7 +514,7 @@ async function sendStatusUpdateToUser(phone, status, isHaciosman, lang = 'tr', u
   const mapsLink = isHaciosman 
       ? "https://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw"
       : "https://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw";
-  const durak = isHaciosman ? "Hacıosman Metro" : "Mecidiyeköy";
+  const durak = isHaciosman ? "Hacıosman Metro" : "Mecidiyeköy Vakıfbank Önü";
 
   let detailsText = "";
   if (updatedRes) {
