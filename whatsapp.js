@@ -50,38 +50,12 @@ async function sendLanguageSelection(phone) {
   return sendMessage(data);
 }
 
+const { getSetting } = require('./settingsManager');
+
 async function sendWelcomeMessage(phone, lang = 'tr') {
   const welcomeText = lang === 'en' 
-    ? `HELLO 🌴
-
-🚐 SHUTTLE (ONE WAY):
-Hacıosman: 300₺
-Mecidiyeköy: 350₺
-
-🏖️ BEACH ENTRANCE FEE
-Weekday: 800₺
-Weekend: 1200₺
-
-(Sunbed, umbrella, parking, shower and WC included.)
-0-6 years free
-7-12 years: half price
-
-⚠️ Entry without a female companion is not allowed.`
-    : `MERHABA 🌴
-
-🚐 SHUTTLE (TEK YÖN):
-Hacıosman: 300₺
-Mecidiyeköy: 350 ₺
-
-🏖️ PLAJ GİRİŞ ÜCRETİ
-Hafta İçi: 800₺
-Hafta Sonu: 1200₺
-
-(Şezlong, şemsiye, otopark, duş ve WC dahildir.)
-0-6 yaş ücretsiz
-7-12 yaş: yarı fiyat
-
-⚠️ Plajımıza damsız giriş yapılamamaktadır.`;
+    ? getSetting('welcome_text_en')
+    : getSetting('welcome_text_tr');
 
   const data = {
     messaging_product: "whatsapp",
@@ -224,24 +198,24 @@ async function sendFaqAnswer(phone, faqId, lang = 'tr') {
   let answer = "";
   if (faqId === 'faq_iptal') {
     answer = lang === 'en' 
-      ? "Cancellations must be made at least 1 day in advance." 
-      : "İptal işlemleri için en geç 1 gün öncesinden haber vermeniz gerekmektedir.";
+      ? getSetting('faq_iptal_en')
+      : getSetting('faq_iptal_tr');
   } else if (faqId === 'faq_shuttle') {
     answer = lang === 'en' 
-      ? "Yes, our shuttle service is 300₺ from Hacıosman and 350₺ from Mecidiyeköy (One Way)." 
-      : "Evet, servis ücretimiz tek yön Hacıosman 300₺, Mecidiyeköy 350₺'dir.";
+      ? getSetting('faq_shuttle_en')
+      : getSetting('faq_shuttle_tr');
   } else if (faqId === 'faq_yemek') {
     answer = lang === 'en' 
-      ? "We have various concept points such as restaurants, cafes, bars, and coffee shops serving our guests at our facility. Therefore, we kindly ask you not to bring food and drinks from outside." 
-      : "Tesisimizde misafirlerimize hizmet veren restoran, kafe, bar, kafeterya ve kahveci gibi çeşitli konsept noktalarımız bulunmaktadır. Bu nedenle dışarıdan yiyecek ve içecek getirilmemesini rica ederiz.";
+      ? getSetting('faq_yemek_en')
+      : getSetting('faq_yemek_tr');
   } else if (faqId === 'faq_konum') {
     answer = lang === 'en' 
-      ? `Our beach is located in Kilyos. Shuttles depart from:\n\n📍 Hacıosman Metro:\nhttps://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw\n\n📍 Mecidiyeköy Vakıfbank:\nhttps://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw` 
-      : `Plajımız Kilyos'ta yer almaktadır. Seferlerimiz aşağıdaki noktalardan kalkmaktadır:\n\n📍 Hacıosman Metro:\nhttps://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw\n\n📍 Mecidiyeköy Vakıfbank:\nhttps://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw`;
+      ? getSetting('faq_konum_en')
+      : getSetting('faq_konum_tr');
   } else if (faqId === 'faq_saat') {
     answer = lang === 'en' 
-      ? "Please be ready at the designated departure point 10-15 minutes before the departure time. If you cannot find the vehicle, you can directly call 0545 578 41 53 to reach the shuttle." 
-      : "Lütfen kalkış saatinden 10-15 dakika önce belirlenen kalkış noktasında hazır bulununuz. Aracı bulamamanız durumunda servise ulaşmak için doğrudan 0545 578 41 53 numarasını arayabilirsiniz.";
+      ? getSetting('faq_saat_en')
+      : getSetting('faq_saat_tr');
   }
 
   const menuTitle = lang === 'en' ? "Main Menu" : "Ana Menü";
@@ -329,7 +303,7 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
 
   if (isToday) {
     availableGidis = allGidis.filter(trip => trip.timeInt > currentTimeInt);
-    availableDonus = allDonus.filter(trip => trip.timeInt > currentTimeInt);
+    // Donus is NOT filtered by time. Always show return info for the day.
   }
 
   if (availableGidis.length === 0) {
@@ -356,9 +330,7 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
     : "\n\n🌆 *Dönüş Sefer Saatleri (Sadece Bilgi):*\n";
   if (availableDonus.length > 0) {
     donusText += availableDonus.map(t => "• " + t.title).join("\n");
-    donusText += lang === 'en' 
-      ? "\n_Note: Return trips do not require reservations. You can board the vehicle 10-15 mins before departure._"
-      : "\n_Not: Dönüşte rezervasyon yoktur. Kalkıştan 10-15 dk önce araca doğrudan binebilirsiniz._";
+    donusText += "\n" + (lang === 'en' ? getSetting('donus_info_en') : getSetting('donus_info_tr'));
   } else {
     donusText += lang === 'en' ? "No return shuttles available." : "Uygun dönüş seferi bulunmamaktadır.";
   }

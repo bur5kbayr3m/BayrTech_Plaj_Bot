@@ -14,13 +14,26 @@ async function sendAdminMainMenu(phone) {
     to: phone,
     type: 'interactive',
     interactive: {
-      type: "button",
-      body: { text: "⚙️ *ADMİN PANELİ*\n\nSistemi yönetmek için aşağıdaki butonları kullanabilirsiniz.\n\n_Yeni sefer ekleyebilir, mevcut bir seferi silebilir veya tüm seferleri görüntüleyebilirsiniz._" },
+      type: "list",
+      header: { type: "text", text: "⚙️ ADMİN PANELİ" },
+      body: { text: "Sistemi yönetmek için aşağıdaki menüden işlem seçebilirsiniz.\n\n_Yeni sefer ekleyebilir, silebilir, seferleri görebilir veya bot ayarlarını güncelleyebilirsiniz._" },
       action: {
-        buttons: [
-          { type: "reply", reply: { id: "admin_saat_ekle", title: "➕ Sefer Ekle" } },
-          { type: "reply", reply: { id: "admin_saat_sil", title: "➖ Sefer Sil" } },
-          { type: "reply", reply: { id: "admin_list_trips", title: "📋 Seferleri Gör" } }
+        button: "İşlem Seç",
+        sections: [
+          {
+            title: "Sefer İşlemleri",
+            rows: [
+              { id: "admin_saat_ekle", title: "➕ Sefer Ekle" },
+              { id: "admin_saat_sil", title: "➖ Sefer Sil" },
+              { id: "admin_list_trips", title: "📋 Seferleri Gör" }
+            ]
+          },
+          {
+            title: "Sistem Ayarları",
+            rows: [
+              { id: "admin_settings", title: "⚙️ Ayarları Değiştir" }
+            ]
+          }
         ]
       }
     }
@@ -38,7 +51,7 @@ async function handleAdminFlow(phone, message, session) {
 
   // Step 1: Main Menu Selection
   if (session.admin_step === 1 && message.type === 'interactive') {
-    const action = message.interactive.button_reply.id; // admin_saat_ekle or admin_saat_sil
+    const action = message.interactive.button_reply ? message.interactive.button_reply.id : (message.interactive.list_reply ? message.interactive.list_reply.id : null);
     
     if (action === 'admin_list_trips') {
       try {
@@ -71,6 +84,43 @@ async function handleAdminFlow(phone, message, session) {
         console.error(err);
         return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "Seferler alınırken hata oluştu." } });
       }
+    }
+    
+    if (action === 'admin_settings') {
+      updateSession(phone, { admin_step: 10, admin_action: 'settings' });
+      return sendMessage({
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "interactive",
+        interactive: {
+          type: "list",
+          header: { type: "text", text: "⚙️ BOT AYARLARI" },
+          body: { text: "Değiştirmek istediğiniz metni seçin:" },
+          action: {
+            button: "Ayar Seçin",
+            sections: [
+              {
+                title: "Karşılama ve İletişim",
+                rows: [
+                  { id: "set_welcome_text_tr", title: "Karşılama Mesajı" },
+                  { id: "set_contact_phone", title: "İletişim Numarası" },
+                  { id: "set_donus_info_tr", title: "Dönüş Bilgi Notu" }
+                ]
+              },
+              {
+                title: "Sıkça Sorulan Sorular",
+                rows: [
+                  { id: "set_faq_iptal_tr", title: "SSS: İptal Şartları" },
+                  { id: "set_faq_shuttle_tr", title: "SSS: Servis Ücretli mi" },
+                  { id: "set_faq_yemek_tr", title: "SSS: Yiyecek İçecek" },
+                  { id: "set_faq_konum_tr", title: "SSS: Konum Bilgisi" },
+                  { id: "set_faq_saat_tr", title: "SSS: Servis Nerede" }
+                ]
+              }
+            ]
+          }
+        }
+      });
     }
     
     if (action === 'admin_saat_sil') {
@@ -234,6 +284,45 @@ async function handleAdminFlow(phone, message, session) {
       resetSession(phone);
       return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "❌ Kayıt sırasında bir hata oluştu." } });
     }
+  }
+
+  // Step 10: Setting Key Selected -> Ask for new value
+  if (session.admin_step === 10 && message.type === 'interactive' && message.interactive.list_reply) {
+    const settingId = message.interactive.list_reply.id.replace('set_', '');
+    const settingTitle = message.interactive.list_reply.title;
+    
+    updateSession(phone, { admin_step: 11, setting_key: settingId });
+    
+    const { getSetting } = require('./settingsManager');
+    const currentValue = getSetting(settingId);
+    
+    return sendMessage({
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "text",
+      text: { body: `✏️ *${settingTitle}* ayarını düzenliyorsunuz.\n\nMevcut metin:\n_${currentValue}_\n\nLütfen yeni metni yazıp gönderin (İşlemi iptal etmek için 'iptal' yazabilirsiniz):` }
+    });
+  }
+
+  // Step 11: New Setting Value Entered -> Save to settings.json
+  if (session.admin_step === 11 && message.type === 'text') {
+    const newValue = message.text.body.trim();
+    if (newValue.toLowerCase() === 'iptal') {
+      resetSession(phone);
+      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "❌ Ayar değişikliği iptal edildi." } });
+    }
+    
+    const { updateSetting } = require('./settingsManager');
+    updateSetting(session.setting_key, newValue);
+    
+    resetSession(phone);
+    await sendMessage({
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "text",
+      text: { body: "✅ Ayar başarıyla güncellendi ve anında canlı sisteme yansıdı!" }
+    });
+    return sendAdminMainMenu(phone);
   }
 
   // Fallback
