@@ -42,8 +42,8 @@ async function handleAdminFlow(phone, message, session) {
     
     if (action === 'admin_list_trips') {
       try {
-        // Hergün includes all trips with the updated getTripTemplates
-        const templates = await getTripTemplates('Hergün');
+        // Calling getTripTemplates without arguments returns ALL trips
+        const templates = await getTripTemplates();
         if (templates.length === 0) {
           return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "Sistemde hiç sefer bulunmamaktadır." } });
         }
