@@ -44,9 +44,14 @@ async function sendAdminMainMenu(phone) {
 
 async function handleAdminFlow(phone, message, session) {
   // Check if it's a cancellation
-  if (message.type === 'interactive' && message.interactive.button_reply && message.interactive.button_reply.id === 'admin_iptal') {
+  const isButtonCancel = message.type === 'interactive' && message.interactive.button_reply && message.interactive.button_reply.id === 'admin_iptal';
+  const isTextCancel = message.type === 'text' && (message.text.body.toLowerCase().trim() === 'iptal' || message.text.body.toLowerCase().trim() === 'çıkış');
+  
+  if (isButtonCancel || isTextCancel) {
     resetSession(phone);
-    return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "❌ Admin işlemi iptal edildi." } });
+    const { sendMainMenu } = require('./whatsapp');
+    await sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "❌ İşlem iptal edildi. Ana menüye yönlendiriliyorsunuz." } });
+    return sendMainMenu(phone);
   }
 
   // Step 1: Main Menu Selection
@@ -307,10 +312,6 @@ async function handleAdminFlow(phone, message, session) {
   // Step 11: New Setting Value Entered -> Save to settings.json
   if (session.admin_step === 11 && message.type === 'text') {
     const newValue = message.text.body.trim();
-    if (newValue.toLowerCase() === 'iptal') {
-      resetSession(phone);
-      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "❌ Ayar değişikliği iptal edildi." } });
-    }
     
     const { updateSetting } = require('./settingsManager');
     updateSetting(session.setting_key, newValue);
