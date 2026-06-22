@@ -25,7 +25,7 @@ async function sendAdminMainMenu(phone) {
       }
     }
   };
-  updateSession(phone, { admin_step: 0 });
+  updateSession(phone, { admin_step: 1 });
   return sendMessage(data);
 }
 
