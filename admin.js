@@ -65,7 +65,8 @@ async function handleAdminFlow(phone, message, session) {
           }
         });
         
-        return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: msg } });
+        await sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: msg } });
+        return sendAdminMainMenu(phone);
       } catch (err) {
         console.error(err);
         return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "Seferler alınırken hata oluştu." } });
