@@ -45,7 +45,8 @@ async function sendAdminMainMenu(phone) {
 async function handleAdminFlow(phone, message, session) {
   // Check if it's a cancellation
   const isButtonCancel = message.type === 'interactive' && message.interactive.button_reply && message.interactive.button_reply.id === 'admin_iptal';
-  const isTextCancel = message.type === 'text' && (message.text.body.toLowerCase().trim() === 'iptal' || message.text.body.toLowerCase().trim() === 'çıkış');
+  const textBody = message.type === 'text' ? message.text.body.trim().replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase() : '';
+  const isTextCancel = message.type === 'text' && (textBody === 'iptal' || textBody === 'çıkış');
   
   if (isButtonCancel || isTextCancel) {
     resetSession(phone);
