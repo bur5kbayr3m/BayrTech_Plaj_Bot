@@ -1,6 +1,6 @@
 const { sendMessage } = require('./whatsapp');
 const { updateSession, resetSession } = require('./state');
-const { addTripTemplate, removeTripTemplate, getTripTemplates } = require('./supabase');
+const { addTripTemplate, removeTripTemplate, removeTripTemplateById, getTripTemplates } = require('./supabase');
 
 function getTurkeyTime() {
   const d = new Date();
@@ -207,15 +207,14 @@ async function handleAdminFlow(phone, message, session) {
 
   // Deletion Step 2: Trip Selected -> Delete
   if (session.admin_step === 99 && message.type === 'interactive' && message.interactive.list_reply) {
+    const replyId = message.interactive.list_reply.id; // e.g. "del_tmp_123"
+    const tripId = parseInt(replyId.replace('del_tmp_', ''));
     const title = message.interactive.list_reply.title; // e.g. "08:30 Haciosman Metro"
-    const parts = title.split(' ');
-    const saat = parts[0];
-    const kalkis = parts.slice(1).join(' ');
     
     try {
-      await removeTripTemplate(saat, kalkis);
+      await removeTripTemplateById(tripId);
       resetSession(phone);
-      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: `✅ ${saat} ${kalkis} menüden başarıyla SİLİNDİ.` } });
+      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: `✅ ${title} menüden başarıyla SİLİNDİ.` } });
     } catch (e) {
       resetSession(phone);
       return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "❌ Silme işlemi başarısız oldu." } });

@@ -304,6 +304,15 @@ async function removeTripTemplate(saat, kalkis_yeri) {
   if (error) throw error;
 }
 
+async function removeTripTemplateById(id) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { error } = await supabase
+    .from('trip_templates')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+
 module.exports = {
   supabase,
   saveReservation,
@@ -316,5 +325,6 @@ module.exports = {
   cleanUpDatabase,
   getTripTemplates,
   addTripTemplate,
-  removeTripTemplate
+  removeTripTemplate,
+  removeTripTemplateById
 };
