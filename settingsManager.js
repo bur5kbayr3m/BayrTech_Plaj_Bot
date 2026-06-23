@@ -10,6 +10,8 @@ const defaultSettings = {
   faq_shuttle_en: "Yes, round-trip transportation is included in the entrance fee.",
   faq_yemek_tr: "Plajımıza dışarıdan yiyecek ve içecek getirilmesi yasaktır.",
   faq_yemek_en: "Outside food and drinks are not allowed on the beach.",
+  faq_ucret_tr: "Mecidiyeköy 350 TL, Hacıosman 300 TL kişi başı tek gidiş ücretidir.\n\n*TEK GİDİŞ FİYATIDIR.*",
+  faq_ucret_en: "From Mecidiyeköy 350 TL, from Hacıosman 300 TL per person for a one-way trip.\n\n*ONE-WAY PRICE ONLY.*",
   faq_konum_tr: "Plajımız Kilyos'ta yer almaktadır. Seferlerimiz aşağıdaki noktalardan kalkmaktadır:\n\n📍 Hacıosman Metro:\nhttps://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw\n\n📍 Mecidiyeköy Vakıfbank:\nhttps://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw",
   faq_konum_en: "Our beach is located in Kilyos. Shuttles depart from:\n\n📍 Hacıosman Metro:\nhttps://maps.app.goo.gl/8vFYmQCcdzYN1HCu8?g_st=iw\n\n📍 Mecidiyeköy Vakıfbank:\nhttps://maps.app.goo.gl/5DTtenCnGYM8Qf24A?g_st=iw",
   faq_saat_tr: "Belirtilen noktadan araç kalkacaktır. Servise ulaşmak için 0545 578 41 53 numarasını direkt olarak arayabilirsiniz eğer aracı bulamazsanız.",

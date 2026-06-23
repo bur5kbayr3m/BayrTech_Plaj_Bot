@@ -124,6 +124,7 @@ async function sendDaySelectionList(phone, lang = 'tr') {
 
   const headerText = lang === 'en' ? "📅 Reservation Day" : "📅 Rezervasyon Günü";
   const bodyText = lang === 'en' ? "Please select the day you want to book:" : "Lütfen rezervasyon yapmak istediğiniz günü seçin:";
+  bodyText += `Not: Dönüşte rezervasyon yoktur. Kalkıştan 10-15 dk önce araca doğrudan binebilirsiniz. Dönüş servislerimiz SADECE Hacıosman Metro'ya yapılmaktadır.`;
   const buttonText = lang === 'en' ? "Select Day" : "Gün Seçin";
   const sectionTitle = lang === 'en' ? "Upcoming Days" : "Önümüzdeki Günler";
 
@@ -161,14 +162,14 @@ async function sendFaqList(phone, lang = 'tr') {
   const sectionTitle = lang === 'en' ? "FAQ" : "Sıkça Sorulan Sorular";
 
   const rows = lang === 'en' ? [
-    { id: "faq_iptal", title: "Cancellation Policy?" },
     { id: "faq_shuttle", title: "Is the shuttle paid?" },
+    { id: "faq_ucret", title: "Servis Ücretli mi?" },
     { id: "faq_yemek", title: "Outside Food/Drink?" },
     { id: "faq_konum", title: "Location Information" },
     { id: "faq_saat", title: "Where is the shuttle?" }
   ] : [
-    { id: "faq_iptal", title: "İptal Şartları Neler?" },
     { id: "faq_shuttle", title: "Servis ücretli mi?" },
+    { id: "faq_ucret", title: "Servis Ücretli mi?" },
     { id: "faq_yemek", title: "Yiyecek ve İçecek" },
     { id: "faq_konum", title: "Konum Bilgisi" },
     { id: "faq_saat", title: "Servis aracı nerede?" }
@@ -196,22 +197,20 @@ async function sendFaqList(phone, lang = 'tr') {
 
 async function sendFaqAnswer(phone, faqId, lang = 'tr') {
   let answer = "";
-  if (faqId === 'faq_iptal') {
-    answer = lang === 'en' 
-      ? getSetting('faq_iptal_en')
-      : getSetting('faq_iptal_tr');
-  } else if (faqId === 'faq_shuttle') {
+  if (faqId === 'faq_shuttle') {
     answer = lang === 'en' 
       ? getSetting('faq_shuttle_en')
       : getSetting('faq_shuttle_tr');
+  } else if (faqId === 'faq_ucret') {
+    answer = lang === 'en' 
+      ? getSetting('faq_ucret_en')
+      : getSetting('faq_ucret_tr');
   } else if (faqId === 'faq_yemek') {
     answer = lang === 'en' 
       ? getSetting('faq_yemek_en')
       : getSetting('faq_yemek_tr');
   } else if (faqId === 'faq_konum') {
-    answer = lang === 'en' 
-      ? getSetting('faq_konum_en')
-      : getSetting('faq_konum_tr');
+    return getSetting('faq_konum_tr');
   } else if (faqId === 'faq_saat') {
     answer = lang === 'en' 
       ? getSetting('faq_saat_en')
@@ -509,15 +508,7 @@ Please be at the departure point 15 minutes before the shuttle time.
 ${mapsLink}
 
 Have a great holiday and stay healthy! 🌊`
-      : `🎉 *Rezervasyonunuz Onaylandı!*\n${detailsText}
-Seçtiğiniz Durak: *${durak}*
-
-Servis saatinden 15 dakika önce kalkış noktasında olmanızı rica ederiz.
-
-📍 *Kalkış Noktası Konumu:*
-${mapsLink}
-
-İyi tatiller, sağlıklı günler dileriz! 🌊`;
+      : `🎉 *Rezervasyonunuz Onaylandı!*\n\nSeçtiğiniz Durak: *${durak}*\n\nServis saatinden 15 dakika önce kalkış noktasında olmanızı rica ederiz.\n\n📍 *Kalkış Noktası Konumu:*\n${mapsLink}\n\nİyi tatiller, sağlıklı günler dileriz! 🌊`;
   } else {
     bodyText = lang === 'en'
       ? `❌ *Your Reservation is Rejected.*
