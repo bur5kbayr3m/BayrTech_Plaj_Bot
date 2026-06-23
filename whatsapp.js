@@ -162,13 +162,11 @@ async function sendFaqList(phone, lang = 'tr') {
   const sectionTitle = lang === 'en' ? "FAQ" : "Sıkça Sorulan Sorular";
 
   const rows = lang === 'en' ? [
-    { id: "faq_shuttle", title: "Is the shuttle paid?" },
-    { id: "faq_ucret", title: "Servis Ücretli mi?" },
+    { id: "faq_ucret", title: "Is the shuttle paid?" },
     { id: "faq_yemek", title: "Outside Food/Drink?" },
     { id: "faq_konum", title: "Location Information" },
     { id: "faq_saat", title: "Where is the shuttle?" }
   ] : [
-    { id: "faq_shuttle", title: "Servis ücretli mi?" },
     { id: "faq_ucret", title: "Servis Ücretli mi?" },
     { id: "faq_yemek", title: "Yiyecek ve İçecek" },
     { id: "faq_konum", title: "Konum Bilgisi" },
@@ -197,11 +195,7 @@ async function sendFaqList(phone, lang = 'tr') {
 
 async function sendFaqAnswer(phone, faqId, lang = 'tr') {
   let answer = "";
-  if (faqId === 'faq_shuttle') {
-    answer = lang === 'en' 
-      ? getSetting('faq_shuttle_en')
-      : getSetting('faq_shuttle_tr');
-  } else if (faqId === 'faq_ucret') {
+  if (faqId === 'faq_ucret') {
     answer = lang === 'en' 
       ? getSetting('faq_ucret_en')
       : getSetting('faq_ucret_tr');
