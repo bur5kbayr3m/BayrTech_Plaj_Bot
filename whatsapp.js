@@ -123,8 +123,8 @@ async function sendDaySelectionList(phone, lang = 'tr') {
   const d2 = days[(t.getDay() + 2) % 7];
 
   const headerText = lang === 'en' ? "📅 Reservation Day" : "📅 Rezervasyon Günü";
-  const bodyText = lang === 'en' ? "Please select the day you want to book:" : "Lütfen rezervasyon yapmak istediğiniz günü seçin:";
-  bodyText += `Not: Dönüşte rezervasyon yoktur. Kalkıştan 10-15 dk önce araca doğrudan binebilirsiniz. Dönüş servislerimiz SADECE Hacıosman Metro'ya yapılmaktadır.`;
+  let bodyText = lang === 'en' ? "Please select the day you want to book:" : "Lütfen rezervasyon yapmak istediğiniz günü seçin:";
+  bodyText += `\n\nNot: Dönüşte rezervasyon yoktur. Kalkıştan 10-15 dk önce araca doğrudan binebilirsiniz. Dönüş servislerimiz SADECE Hacıosman Metro'ya yapılmaktadır.`;
   const buttonText = lang === 'en' ? "Select Day" : "Gün Seçin";
   const sectionTitle = lang === 'en' ? "Upcoming Days" : "Önümüzdeki Günler";
 
