@@ -27,12 +27,6 @@ async function sendAdminMainMenu(phone) {
               { id: "admin_saat_sil", title: "➖ Sefer Sil" },
               { id: "admin_list_trips", title: "📋 Seferleri Gör" }
             ]
-          },
-          {
-            title: "Sistem Ayarları",
-            rows: [
-              { id: "admin_settings", title: "⚙️ Ayarları Değiştir" }
-            ]
           }
         ]
       }
@@ -90,43 +84,6 @@ async function handleAdminFlow(phone, message, session) {
         console.error(err);
         return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "Seferler alınırken hata oluştu." } });
       }
-    }
-    
-    if (action === 'admin_settings') {
-      updateSession(phone, { admin_step: 10, admin_action: 'settings' });
-      return sendMessage({
-        messaging_product: "whatsapp",
-        to: phone,
-        type: "interactive",
-        interactive: {
-          type: "list",
-          header: { type: "text", text: "⚙️ BOT AYARLARI" },
-          body: { text: "Değiştirmek istediğiniz metni seçin:" },
-          action: {
-            button: "Ayar Seçin",
-            sections: [
-              {
-                title: "Karşılama ve İletişim",
-                rows: [
-                  { id: "set_welcome_text_tr", title: "Karşılama Mesajı" },
-                  { id: "set_contact_phone", title: "İletişim Numarası" },
-                  { id: "set_donus_info_tr", title: "Dönüş Bilgi Notu" }
-                ]
-              },
-              {
-                title: "Sıkça Sorulan Sorular",
-                rows: [
-                  { id: "set_faq_iptal_tr", title: "SSS: İptal Şartları" },
-                  { id: "set_faq_shuttle_tr", title: "SSS: Servis Ücretli mi" },
-                  { id: "set_faq_yemek_tr", title: "SSS: Yiyecek İçecek" },
-                  { id: "set_faq_konum_tr", title: "SSS: Konum Bilgisi" },
-                  { id: "set_faq_saat_tr", title: "SSS: Servis Nerede" }
-                ]
-              }
-            ]
-          }
-        }
-      });
     }
     
     if (action === 'admin_saat_sil') {
@@ -316,138 +273,119 @@ async function handleAdminFlow(phone, message, session) {
     }
   }
 
-  // Step 10: Setting Key Selected -> Ask for new value
-  if (session.admin_step === 10 && message.type === 'interactive' && message.interactive.list_reply) {
-    const settingId = message.interactive.list_reply.id.replace('set_', '');
-    const settingTitle = message.interactive.list_reply.title;
+  // Reservation Step 1: Day Selected -> List Trips with Reservations
+  if (session.admin_step === 101 && message.type === 'interactive' && message.interactive.button_reply) {
+    const dayId = message.interactive.button_reply.id.replace('res_day_', '');
     
-    updateSession(phone, { admin_step: 11, setting_key: settingId });
+    const t = getTurkeyTime();
+    if (dayId === 'yarin') {
+      t.setDate(t.getDate() + 1);
+    } else if (dayId === 'diger') {
+      t.setDate(t.getDate() + 2);
+    }
+    const dayStr = t.toISOString().split('T')[0];
     
-    const { getSetting } = require('./settingsManager');
-    const currentValue = getSetting(settingId);
+    const { getDailyReservations } = require('./supabase');
+    const reservations = await getDailyReservations(dayStr);
+    const activeRes = reservations.filter(r => r.durum === 'Beklemede' || r.durum === 'Onaylandı');
+    
+    if (activeRes.length === 0) {
+      resetSession(phone);
+      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: `_Seçtiğiniz tarih (${dayStr}) için kayıtlı rezervasyon bulunmuyor._` } });
+    }
+    
+    const grouped = {};
+    activeRes.forEach(res => {
+      const trip = res.trips || {};
+      const saat = trip.saat ? trip.saat.substring(0, 5) : '00:00';
+      const kalkis = trip.kalkis_yeri || 'Bilinmeyen';
+      const yon = trip.yon || 'Gidis';
+      const key = `${saat} ${kalkis} (${yon})`;
+      const internalKey = trip.id ? `res_trip_${trip.id}` : `res_key_${saat}_${kalkis}`;
+      
+      if (!grouped[internalKey]) grouped[internalKey] = { title: key, pax: 0, raw_date: dayStr };
+      grouped[internalKey].pax += (res.kisi_sayisi || 1);
+    });
+    
+    const rows = Object.keys(grouped).slice(0, 30).map(key => ({
+      id: key,
+      title: grouped[key].title,
+      description: `Toplam: ${grouped[key].pax} Kişi`
+    }));
+    
+    updateSession(phone, { admin_step: 102, res_day: dayStr });
     
     return sendMessage({
       messaging_product: "whatsapp",
       to: phone,
-      type: "text",
-      text: { body: `✏️ *${settingTitle}* ayarını düzenliyorsunuz.\n\nMevcut metin:\n_${currentValue}_\n\nLütfen yeni metni yazıp gönderin (İşlemi iptal etmek için 'iptal' yazabilirsiniz):` }
+      type: "interactive",
+      interactive: {
+        type: "list",
+        header: { type: "text", text: `📋 ${dayStr} Rezervasyonları` },
+        body: { text: "İncelemek istediğiniz seferi seçin:" },
+        action: { button: "Sefer Seç", sections: [{ title: "Kayıtlı Seferler", rows: rows }] }
+      }
     });
   }
 
-  // Step 11: New Setting Value Entered -> Save to settings.json
-  if (session.admin_step === 11 && message.type === 'text') {
-    const newValue = message.text.body.trim();
+  // Reservation Step 2: Trip Selected -> Show Details
+  if (session.admin_step === 102 && message.type === 'interactive' && message.interactive.list_reply) {
+    const selectedKey = message.interactive.list_reply.id;
+    const title = message.interactive.list_reply.title;
+    const dayStr = session.res_day;
     
-    const { updateSetting } = require('./settingsManager');
-    updateSetting(session.setting_key, newValue);
+    const { getDailyReservations } = require('./supabase');
+    const reservations = await getDailyReservations(dayStr);
+    const activeRes = reservations.filter(r => r.durum === 'Beklemede' || r.durum === 'Onaylandı');
+    
+    let filteredRes = [];
+    if (selectedKey.startsWith('res_trip_')) {
+      const tripId = parseInt(selectedKey.replace('res_trip_', ''));
+      filteredRes = activeRes.filter(r => r.trip_id === tripId);
+    } else {
+      // Fallback matching
+      const parts = selectedKey.replace('res_key_', '').split('_');
+      filteredRes = activeRes.filter(r => r.trips && r.trips.saat.startsWith(parts[0]));
+    }
+    
+    let msgBody = `🚐 *${title}* (${dayStr})\n\n`;
+    let totalPax = 0;
+    
+    filteredRes.forEach(res => {
+      msgBody += `👤 *${res.ad_soyad}* (${res.kisi_sayisi} Kişi)\n`;
+      msgBody += `📱 Müşteri: +${res.musteri_tel}\n`;
+      msgBody += `Durum: ${res.durum}\n\n`;
+      totalPax += res.kisi_sayisi;
+    });
+    
+    msgBody += `*Toplam Yolcu: ${totalPax}*`;
     
     resetSession(phone);
-    await sendMessage({
-      messaging_product: "whatsapp",
-      to: phone,
-      type: "text",
-      text: { body: "✅ Ayar başarıyla güncellendi ve anında canlı sisteme yansıdı!" }
-    });
-    return sendAdminMainMenu(phone);
+    return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: msgBody } });
   }
 
   // Fallback
   return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "Admin işlemi anlaşılamadı. 'İptal' diyerek çıkabilirsiniz." } });
 }
 
-const { getDailyReservations } = require('./supabase');
-
-async function sendDailySummaryToAdmin(phone) {
-  try {
-    const t = getTurkeyTime();
-    const todayStr = t.toISOString().split('T')[0];
-    
-    const tomorrow = new Date(t);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
-    
-    // Fetch reservations
-    const resToday = await getDailyReservations(todayStr);
-    const resTomorrow = await getDailyReservations(tomorrowStr);
-    
-    // Filter active ones
-    const activeToday = resToday.filter(r => r.durum === 'Beklemede' || r.durum === 'Onaylandı');
-    const activeTomorrow = resTomorrow.filter(r => r.durum === 'Beklemede' || r.durum === 'Onaylandı');
-    
-    let msgBody = `📊 *REZERVASYON ÖZETİ*\n\n`;
-
-    // --- TODAY ---
-    msgBody += `📅 *BUGÜN (${todayStr})*\n`;
-    if (activeToday.length === 0) {
-      msgBody += `_Bugün için kayıtlı rezervasyon bulunmuyor._\n\n`;
-    } else {
-      const groupedToday = {};
-      activeToday.forEach(res => {
-        const trip = res.trips || {};
-        const saat = trip.saat ? trip.saat.substring(0, 5) : 'Bilinmeyen Saat';
-        const kalkis = trip.kalkis_yeri || 'Bilinmeyen Durak';
-        const yon = trip.yon || 'Bilinmeyen Yön';
-        const key = `${saat} - ${kalkis} (${yon})`;
-        
-        if (!groupedToday[key]) groupedToday[key] = { title: key, totalPax: 0, passengers: [] };
-        groupedToday[key].totalPax += (res.kisi_sayisi || 1);
-        groupedToday[key].passengers.push(`• ${res.ad_soyad} (${res.kisi_sayisi} Kişi) - ${res.durum}`);
-      });
-
-      const sortedToday = Object.keys(groupedToday).sort();
-      sortedToday.forEach(key => {
-        const group = groupedToday[key];
-        msgBody += `🚐 *${group.title}* (Toplam: ${group.totalPax} Kişi)\n`;
-        group.passengers.forEach(p => { msgBody += `${p}\n`; });
-        msgBody += `\n`;
-      });
+async function startAdminReservationFlow(phone) {
+  updateSession(phone, { admin_step: 101 });
+  return sendMessage({
+    messaging_product: "whatsapp",
+    to: phone,
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: { text: "📅 Hangi günün rezervasyonlarını görüntülemek istiyorsunuz?" },
+      action: {
+        buttons: [
+          { type: "reply", reply: { id: "res_day_bugun", title: "Bugün" } },
+          { type: "reply", reply: { id: "res_day_yarin", title: "Yarın" } },
+          { type: "reply", reply: { id: "res_day_diger", title: "3. Gün" } }
+        ]
+      }
     }
-    
-    msgBody += `➖➖➖➖➖➖➖➖\n\n`;
-
-    // --- TOMORROW ---
-    msgBody += `📅 *YARIN (${tomorrowStr})*\n`;
-    if (activeTomorrow.length === 0) {
-      msgBody += `_Yarın için henüz rezervasyon bulunmuyor._\n`;
-    } else {
-      const groupedTomorrow = {};
-      activeTomorrow.forEach(res => {
-        const trip = res.trips || {};
-        const saat = trip.saat ? trip.saat.substring(0, 5) : 'Bilinmeyen Saat';
-        const kalkis = trip.kalkis_yeri || 'Bilinmeyen Durak';
-        const yon = trip.yon || 'Bilinmeyen Yön';
-        const key = `${saat} - ${kalkis} (${yon})`;
-        
-        if (!groupedTomorrow[key]) groupedTomorrow[key] = { title: key, totalPax: 0, passengers: [] };
-        groupedTomorrow[key].totalPax += (res.kisi_sayisi || 1);
-        groupedTomorrow[key].passengers.push(`• ${res.ad_soyad} (${res.kisi_sayisi} Kişi) - ${res.durum}`);
-      });
-
-      const sortedTomorrow = Object.keys(groupedTomorrow).sort();
-      sortedTomorrow.forEach(key => {
-        const group = groupedTomorrow[key];
-        msgBody += `🚐 *${group.title}* (Toplam: ${group.totalPax} Kişi)\n`;
-        group.passengers.forEach(p => { msgBody += `${p}\n`; });
-        msgBody += `\n`;
-      });
-    }
-
-    return sendMessage({
-      messaging_product: "whatsapp",
-      to: phone,
-      type: "text",
-      text: { body: msgBody }
-    });
-    
-  } catch (err) {
-    console.error("Error generating daily summary:", err);
-    return sendMessage({
-      messaging_product: "whatsapp",
-      to: phone,
-      type: "text",
-      text: { body: "❌ Özet alınırken bir hata oluştu." }
-    });
-  }
+  });
 }
 
 module.exports = {

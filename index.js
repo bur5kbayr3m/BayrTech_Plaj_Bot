@@ -64,7 +64,7 @@ app.post('/webhook', async (req, res) => {
 
       let session = getSession(phone);
       
-      const { sendAdminMainMenu, handleAdminFlow, sendDailySummaryToAdmin } = require('./admin');
+      const { sendAdminMainMenu, handleAdminFlow, startAdminReservationFlow } = require('./admin');
       
       // Admin Interception
       const isAdmin = process.env.ADMIN_PHONE && phone.includes(process.env.ADMIN_PHONE.trim().replace('+', '').replace(/^0/, ''));
@@ -84,7 +84,7 @@ app.post('/webhook', async (req, res) => {
         }
         
         if (isAdmin && textLower === 'rezervasyon') {
-          await sendDailySummaryToAdmin(phone);
+          await startAdminReservationFlow(phone);
           return res.sendStatus(200);
         }
 
