@@ -130,30 +130,22 @@ async function handleAdminFlow(phone, message, session) {
     }
     
     if (action === 'admin_saat_sil') {
-      // Show list of existing templates to delete
-      const templates = await getTripTemplates();
-      if (templates.length === 0) {
-        resetSession(phone);
-        return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "Sistemde silinecek kayıtlı saat bulunmuyor." } });
-      }
-      
-      const rows = templates.slice(0, 10).map(t => ({
-        id: `del_tmp_${t.id}`,
-        title: `${t.saat} ${t.kalkis_yeri}`,
-        description: `${t.gun_tipi} - ${t.yon}`
-      }));
-      
-      updateSession(phone, { admin_step: 99 }); // Deletion step
+      updateSession(phone, { admin_step: 98, admin_action: 'delete' });
+      // Ask Gun Tipi for Deletion
       return sendMessage({
         messaging_product: "whatsapp",
         to: phone,
         type: "interactive",
         interactive: {
-          type: "list",
-          header: { type: "text", text: "Saat Sil" },
-          body: { text: "Menüden silmek istediğiniz saati seçin (Son 10 saat listelenir):" },
-          footer: { text: "Seçim yapın" },
-          action: { button: "Saat Seç", sections: [{ title: "Kayıtlı Saatler", rows: rows }] }
+          type: "button",
+          body: { text: "📅 Hangi günün seferini SİLMEK istiyorsunuz?" },
+          action: {
+            buttons: [
+              { type: "reply", reply: { id: "del_gun_haftasonu", title: "Haftasonu" } },
+              { type: "reply", reply: { id: "del_gun_haftaici", title: "Haftaiçi" } },
+              { type: "reply", reply: { id: "del_gun_hergun", title: "Hergün" } }
+            ]
+          }
         }
       });
     }
@@ -180,7 +172,40 @@ async function handleAdminFlow(phone, message, session) {
     }
   }
 
-  // Deletion logic
+  // Deletion Step 1: Day Type Selected -> Show Trips
+  if (session.admin_step === 98 && message.type === 'interactive' && message.interactive.button_reply) {
+    const gunId = message.interactive.button_reply.id.replace('del_gun_', '');
+    const gun = gunId === 'haftaici' ? 'Haftaici' : (gunId === 'haftasonu' ? 'Haftasonu' : 'Hergün');
+    
+    const templates = await getTripTemplates();
+    const filtered = templates.filter(t => t.gun_tipi === gun);
+    
+    if (filtered.length === 0) {
+      resetSession(phone);
+      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: `Sistemde ${gun} için kayıtlı sefer bulunmuyor.` } });
+    }
+    
+    const rows = filtered.slice(0, 30).map(t => ({
+      id: `del_tmp_${t.id}`,
+      title: `${t.saat} ${t.kalkis_yeri}`,
+      description: `${t.gun_tipi} - ${t.yon}`
+    }));
+    
+    updateSession(phone, { admin_step: 99 });
+    return sendMessage({
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "interactive",
+      interactive: {
+        type: "list",
+        header: { type: "text", text: `🗑️ ${gun} Seferleri` },
+        body: { text: "Aşağıdaki listeden silmek istediğiniz saati seçin:" },
+        action: { button: "Seç", sections: [{ title: "Kayıtlı Saatler", rows: rows }] }
+      }
+    });
+  }
+
+  // Deletion Step 2: Trip Selected -> Delete
   if (session.admin_step === 99 && message.type === 'interactive' && message.interactive.list_reply) {
     const title = message.interactive.list_reply.title; // e.g. "08:30 Haciosman Metro"
     const parts = title.split(' ');
