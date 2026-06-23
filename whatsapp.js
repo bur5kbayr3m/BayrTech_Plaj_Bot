@@ -547,7 +547,8 @@ Maalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edi
         body: { text: bodyText },
         action: {
           buttons: [
-            { type: "reply", reply: { id: `menu_ana`, title: lang === 'en' ? "🏠 Main Menu" : "🏠 Ana Menü" } }
+            { type: "reply", reply: { id: `menu_ana`, title: lang === 'en' ? "🏠 Main Menu" : "🏠 Ana Menü" } },
+            { type: "reply", reply: { id: `menu_rezervasyon`, title: lang === 'en' ? "📅 Make Reservation" : "📅 Rezervasyon Yap" } }
           ]
         }
       }
@@ -565,7 +566,8 @@ Maalesef seçtiğiniz saat için kontenjanımız dolmuştur veya sefer iptal edi
         body: { text: bodyText },
         action: {
           buttons: [
-            { type: "reply", reply: { id: `menu_canli_destek`, title: lang === 'en' ? "📞 Live Support" : "📞 Canlı Destek" } }
+            { type: "reply", reply: { id: `menu_canli_destek`, title: lang === 'en' ? "📞 Live Support" : "📞 Canlı Destek" } },
+            { type: "reply", reply: { id: `menu_rezervasyon`, title: lang === 'en' ? "📅 Make Reservation" : "📅 Rezervasyon Yap" } }
           ]
         }
       }
