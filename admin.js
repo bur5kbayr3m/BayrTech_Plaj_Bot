@@ -301,24 +301,24 @@ async function handleAdminFlow(phone, message, session) {
       activeRes.forEach(res => {
         const trip = res.trips || {};
         const saat = trip.saat ? trip.saat.substring(0, 5) : '00:00';
-        const kalkis = trip.kalkis_yeri || 'Bilinmeyen';
-        const yon = trip.yon || 'Gidis';
-        const key = `${saat} ${kalkis} (${yon})`;
+        const kalkis = trip.kalkis_yeri ? trip.kalkis_yeri.substring(0, 10) : 'Bilinmeyen';
+        const yon = trip.yon === 'Gidis' ? 'Gidiş' : 'Dönüş';
+        const key = `${saat} ${kalkis} (${yon.substring(0,1)})`;
         const internalKey = trip.id ? `res_trip_${trip.id}` : `res_key_${saat}_${kalkis}`;
         
         if (!grouped[internalKey]) grouped[internalKey] = { title: key, pax: 0, raw_date: dayStr };
         grouped[internalKey].pax += (res.kisi_sayisi || 1);
       });
       
-      const rows = Object.keys(grouped).slice(0, 30).map(key => ({
+      const rows = Object.keys(grouped).slice(0, 10).map(key => ({
         id: key,
-        title: grouped[key].title,
+        title: grouped[key].title.substring(0, 24),
         description: `Toplam: ${grouped[key].pax} Kişi`
       }));
       
       updateSession(phone, { admin_step: 102, res_day: dayStr });
       
-      return sendMessage({
+      await sendMessage({
         messaging_product: "whatsapp",
         to: phone,
         type: "interactive",
@@ -329,6 +329,7 @@ async function handleAdminFlow(phone, message, session) {
           action: { button: "Sefer Seç", sections: [{ title: "Kayıtlı Seferler", rows: rows }] }
         }
       });
+      return;
     } catch (err) {
       console.error("Error in admin_step 101:", err);
       resetSession(phone);
