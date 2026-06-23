@@ -285,7 +285,10 @@ async function handleAdminFlow(phone, message, session) {
     } else if (dayId === 'diger') {
       t.setDate(t.getDate() + 2);
     }
-    const dayStr = t.toISOString().split('T')[0];
+    const y = t.getFullYear();
+    const m = String(t.getMonth() + 1).padStart(2, '0');
+    const d = String(t.getDate()).padStart(2, '0');
+    const dayStr = `${y}-${m}-${d}`;
     
     try {
       const { getDailyReservations } = require('./supabase');
