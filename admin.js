@@ -391,5 +391,5 @@ async function startAdminReservationFlow(phone) {
 module.exports = {
   sendAdminMainMenu,
   handleAdminFlow,
-  sendDailySummaryToAdmin
+  startAdminReservationFlow
 };
