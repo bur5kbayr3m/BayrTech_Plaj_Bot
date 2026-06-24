@@ -38,7 +38,16 @@ async function sendAdminMainMenu(phone) {
 
 async function showDeletionList(phone, gun, session) {
   const templates = await getTripTemplates();
-  const filtered = templates.filter(t => t.gun_tipi === gun);
+  let filtered = [];
+  const specificDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
+  
+  if (specificDays.includes(gun)) {
+    filtered = templates.filter(t => t.gun_tipi === 'Haftaici' && t.kalkis_yeri.includes(`(${gun})`));
+  } else if (gun === 'Haftaici') {
+    filtered = templates.filter(t => t.gun_tipi === 'Haftaici' && !t.kalkis_yeri.includes('('));
+  } else {
+    filtered = templates.filter(t => t.gun_tipi === gun);
+  }
   
   if (filtered.length === 0) {
     updateSession(phone, { admin_step: 1 });
