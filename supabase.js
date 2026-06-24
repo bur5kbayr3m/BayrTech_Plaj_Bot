@@ -188,8 +188,8 @@ async function cancelReservation(id) {
   const { data: res } = await supabase.from('reservations').select('kisi_sayisi, sefer_id').eq('id', id).single();
   if (!res) throw new Error('Reservation not found');
   
-  // Update status to İptal Edildi
-  await supabase.from('reservations').update({ durum: 'İptal Edildi' }).eq('id', id);
+  // Update status to Reddedildi (to bypass reservations_durum_check which doesn't allow İptal Edildi)
+  await supabase.from('reservations').update({ durum: 'Reddedildi' }).eq('id', id);
   
   // Restore quota
   if (res.sefer_id) {
