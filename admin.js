@@ -36,6 +36,59 @@ async function sendAdminMainMenu(phone) {
   return sendMessage(data);
 }
 
+async function showDeletionList(phone, gun, session) {
+  const templates = await getTripTemplates();
+  const filtered = templates.filter(t => t.gun_tipi === gun);
+  
+  if (filtered.length === 0) {
+    updateSession(phone, { admin_step: 1 });
+    return sendMessage({
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: { text: `Sistemde ${gun} için kayıtlı sefer bulunmuyor.` },
+        action: { buttons: [{ type: "reply", reply: { id: "menu_ana", title: "🏠 Ana Menü" } }] }
+      }
+    });
+  }
+  
+  const rows = filtered.slice(0, 10).map(t => ({
+    id: `del_tmp_${t.id}`,
+    title: `${t.saat} ${t.kalkis_yeri}`.substring(0, 24),
+    description: `${t.gun_tipi} - ${t.yon}`
+  }));
+  
+  updateSession(phone, { admin_step: 99 });
+  try {
+    await sendMessage({
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "interactive",
+      interactive: {
+        type: "list",
+        header: { type: "text", text: `🗑️ ${gun} Seferleri` },
+        body: { text: "Aşağıdaki listeden silmek istediğiniz saati seçin:" },
+        action: { button: "Seç", sections: [{ title: "Kayıtlı Saatler", rows: rows }] }
+      }
+    });
+  } catch (e) {
+    console.error("Error sending delete list:", e);
+    updateSession(phone, { admin_step: 1 });
+    return sendMessage({
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: { text: "Hata! Çok fazla uzun sefer adı var veya liste oluşturulamadı." },
+        action: { buttons: [{ type: "reply", reply: { id: "menu_ana", title: "🏠 Ana Menü" } }] }
+      }
+    });
+  }
+}
+
 async function handleAdminFlow(phone, message, session) {
   // Check if it's a cancellation
   const isButtonCancel = message.type === 'interactive' && message.interactive.button_reply && message.interactive.button_reply.id === 'admin_iptal';
@@ -133,62 +186,47 @@ async function handleAdminFlow(phone, message, session) {
     }
   }
 
-  // Deletion Step 1: Day Type Selected -> Show Trips
+  // Deletion Step 1: Day Type Selected -> Ask Specific Day (if Haftaiçi) or Show Trips
   if (session.admin_step === 98 && message.type === 'interactive' && message.interactive.button_reply) {
     const gunId = message.interactive.button_reply.id.replace('del_gun_', '');
-    const gun = gunId === 'haftaici' ? 'Haftaici' : (gunId === 'haftasonu' ? 'Haftasonu' : 'Hergün');
-    
-    const templates = await getTripTemplates();
-    const filtered = templates.filter(t => t.gun_tipi === gun);
-    
-    if (filtered.length === 0) {
-      updateSession(phone, { admin_step: 1 });
+    if (gunId === 'haftaici') {
+      updateSession(phone, { admin_step: 985 });
       return sendMessage({
-        messaging_product: "whatsapp",
-        to: phone,
-        type: "interactive",
-        interactive: {
-          type: "button",
-          body: { text: `Sistemde ${gun} için kayıtlı sefer bulunmuyor.` },
-          action: { buttons: [{ type: "reply", reply: { id: "menu_ana", title: "🏠 Ana Menü" } }] }
-        }
-      });
-    }
-    
-    const rows = filtered.slice(0, 10).map(t => ({
-      id: `del_tmp_${t.id}`,
-      title: `${t.saat} ${t.kalkis_yeri}`.substring(0, 24),
-      description: `${t.gun_tipi} - ${t.yon}`
-    }));
-    
-    updateSession(phone, { admin_step: 99 });
-    try {
-      await sendMessage({
         messaging_product: "whatsapp",
         to: phone,
         type: "interactive",
         interactive: {
           type: "list",
-          header: { type: "text", text: `🗑️ ${gun} Seferleri` },
-          body: { text: "Aşağıdaki listeden silmek istediğiniz saati seçin:" },
-          action: { button: "Seç", sections: [{ title: "Kayıtlı Saatler", rows: rows }] }
-        }
-      });
-    } catch (e) {
-      console.error("Error sending delete list:", e);
-      updateSession(phone, { admin_step: 1 });
-      return sendMessage({
-        messaging_product: "whatsapp",
-        to: phone,
-        type: "interactive",
-        interactive: {
-          type: "button",
-          body: { text: "Hata! Çok fazla uzun sefer adı var veya liste oluşturulamadı." },
-          action: { buttons: [{ type: "reply", reply: { id: "menu_ana", title: "🏠 Ana Menü" } }] }
+          header: { type: "text", text: "📅 Gün Seçimi" },
+          body: { text: "Hangi günün seferini silmek istiyorsunuz?" },
+          action: {
+            button: "Gün Seç",
+            sections: [{
+              title: "Haftaiçi Günleri",
+              rows: [
+                { id: "del_day_Haftaici", title: "Tüm Haftaiçi" },
+                { id: "del_day_Pazartesi", title: "Pazartesi" },
+                { id: "del_day_Salı", title: "Salı" },
+                { id: "del_day_Çarşamba", title: "Çarşamba" },
+                { id: "del_day_Perşembe", title: "Perşembe" },
+                { id: "del_day_Cuma", title: "Cuma" }
+              ]
+            }]
+          }
         }
       });
     }
-    return;
+
+    // If Haftasonu or Hergün
+    let gun = "Haftasonu";
+    if (gunId === 'hergun') gun = "Hergün";
+    return showDeletionList(phone, gun, session);
+  }
+
+  // Deletion Step 1.5: Specific Day Selected -> Show Trips
+  if (session.admin_step === 985 && message.type === 'interactive' && message.interactive.list_reply) {
+    const dayId = message.interactive.list_reply.id.replace('del_day_', '');
+    return showDeletionList(phone, dayId, session);
   }
 
   // Deletion Step 2: Trip Selected -> Delete
