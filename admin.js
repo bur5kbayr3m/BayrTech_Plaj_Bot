@@ -391,8 +391,17 @@ async function handleAdminFlow(phone, message, session) {
     
     const formattedSaat = saatInput.replace('.', ':');
 
+    let gunTipi = session.admin_gun;
+    let finalKalkis = session.admin_kalkis;
+    
+    const specificDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
+    if (specificDays.includes(session.admin_gun)) {
+      gunTipi = "Haftaici";
+      finalKalkis = `${session.admin_kalkis} (${session.admin_gun})`;
+    }
+
     try {
-      await addTripTemplate(session.admin_yon, session.admin_kalkis, formattedSaat, session.admin_gun);
+      await addTripTemplate(session.admin_yon, finalKalkis, formattedSaat, gunTipi);
       updateSession(phone, { admin_step: 1 });
       return sendMessage({
         messaging_product: "whatsapp",

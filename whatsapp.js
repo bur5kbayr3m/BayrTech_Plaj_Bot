@@ -285,14 +285,27 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
     const timeParts = tmp.saat.split(':');
     const timeInt = parseInt(timeParts[0]) * 100 + parseInt(timeParts[1]);
     
+    let rawKalkis = tmp.kalkis_yeri;
+    
+    // Check if there is a specific day in kalkis_yeri
+    const dayMatch = rawKalkis.match(/\((.*?)\)/);
+    if (dayMatch) {
+      const tripSpecificDay = dayMatch[1];
+      if (specificDay && tripSpecificDay !== specificDay) {
+        return; // skip this trip for other days!
+      }
+      // Remove the (Pazartesi) part from the raw string for displaying
+      rawKalkis = rawKalkis.replace(/\s*\(.*?\)/, '').trim();
+    }
+    
     // Create emoji prefix
     let emoji = "📍";
-    if (tmp.kalkis_yeri.includes('Mecidiyeköy') || tmp.kalkis_yeri.includes('Mcd')) emoji = "🟣";
-    else if (tmp.kalkis_yeri.includes('Hacıosman') || tmp.kalkis_yeri.includes('Hac')) emoji = "🟢";
-    else if (tmp.kalkis_yeri.includes('Plaj')) emoji = "🏖️";
+    if (rawKalkis.includes('Mecidiyeköy') || rawKalkis.includes('Mcd')) emoji = "🟣";
+    else if (rawKalkis.includes('Hacıosman') || rawKalkis.includes('Hac')) emoji = "🟢";
+    else if (rawKalkis.includes('Plaj')) emoji = "🏖️";
     
     // Format Title
-    let displayKalkis = tmp.kalkis_yeri;
+    let displayKalkis = rawKalkis;
     if (tmp.yon === 'Donus') displayKalkis = "Dönüş"; // Since return is always from Beach, just show "Dönüş 17:00"
     
     const title = `${emoji} ${displayKalkis} ${tmp.saat}`;
