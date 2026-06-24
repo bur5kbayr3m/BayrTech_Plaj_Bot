@@ -232,7 +232,7 @@ async function handleAdminFlow(phone, message, session) {
   // Deletion Step 2: Trip Selected -> Delete
   if (session.admin_step === 99 && message.type === 'interactive' && message.interactive.list_reply) {
     const replyId = message.interactive.list_reply.id; // e.g. "del_tmp_123"
-    const tripId = parseInt(replyId.replace('del_tmp_', ''));
+    const tripId = replyId.replace('del_tmp_', '');
     const title = message.interactive.list_reply.title; // e.g. "08:30 Haciosman Metro"
     
     try {
@@ -506,7 +506,7 @@ async function handleAdminFlow(phone, message, session) {
       
       let filteredRes = [];
       if (selectedKey.startsWith('res_trip_')) {
-        const tripId = parseInt(selectedKey.replace('res_trip_', ''));
+        const tripId = selectedKey.replace('res_trip_', '');
         filteredRes = activeRes.filter(r => r.trip_id === tripId);
       } else {
         // Fallback matching
