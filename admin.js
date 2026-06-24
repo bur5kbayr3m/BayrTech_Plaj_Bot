@@ -537,7 +537,7 @@ async function handleAdminFlow(phone, message, session) {
       
       filteredRes.forEach(res => {
         msgBody += `👤 *${res.ad_soyad}* (${res.kisi_sayisi} Kişi)\n`;
-        msgBody += `📱 Müşteri: +${res.musteri_tel}\n`;
+        msgBody += `📱 Müşteri: +${res.tel_no}\n`;
         msgBody += `Durum: ${res.durum}\n\n`;
         totalPax += res.kisi_sayisi;
       });
