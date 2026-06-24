@@ -270,9 +270,11 @@ async function getTripTemplates(dayType) {
   if (!supabase) return [];
   let query = supabase.from('trip_templates').select('*').eq('aktif', true);
   if (dayType) {
-    // If it's Haftasonu, match Haftasonu or Hergün
-    // If Haftaiçi, match Haftaiçi or Hergün
-    query = query.in('gun_tipi', [dayType, 'Hergün']);
+    if (Array.isArray(dayType)) {
+      query = query.in('gun_tipi', dayType);
+    } else {
+      query = query.in('gun_tipi', [dayType, 'Hergün']);
+    }
   }
   const { data, error } = await query.order('saat', { ascending: true });
   if (error) {

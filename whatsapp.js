@@ -259,11 +259,25 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
   let allDonus = [];
   
   const isWeekend = dayTitle.includes('Cumartesi') || dayTitle.includes('Saturday') || dayTitle.includes('Pazar') || dayTitle.includes('Sunday');
-  const dayType = isWeekend ? 'Haftasonu' : 'Haftaici';
+  
+  let specificDay = null;
+  if (dayTitle.includes('Pazartesi') || dayTitle.includes('Monday')) specificDay = "Pazartesi";
+  else if (dayTitle.includes('Salı') || dayTitle.includes('Tuesday')) specificDay = "Salı";
+  else if (dayTitle.includes('Çarşamba') || dayTitle.includes('Wednesday')) specificDay = "Çarşamba";
+  else if (dayTitle.includes('Perşembe') || dayTitle.includes('Thursday')) specificDay = "Perşembe";
+  else if (dayTitle.includes('Cuma') || dayTitle.includes('Friday')) specificDay = "Cuma";
+
+  let dayQuery = null;
+  if (isWeekend) {
+    dayQuery = ['Haftasonu', 'Hergün'];
+  } else {
+    dayQuery = ['Haftaici', 'Hergün'];
+    if (specificDay) dayQuery.push(specificDay);
+  }
   
   // Fetch dynamic templates from Supabase
   const { getTripTemplates } = require('./supabase');
-  const templates = await getTripTemplates(dayType);
+  const templates = await getTripTemplates(dayQuery);
   
   // Map templates to interactive list format
   templates.forEach(tmp => {
@@ -352,15 +366,13 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
 
 async function sendGroupSelectionList(phone, dayTitle, timeTitle, lang = 'tr') {
   const headerText = lang === 'en' ? "👥 Select Your Group" : "👥 Lütfen Grubunuzu Seçin";
-  const bodyText = lang === 'en' 
-    ? `Selection: ${dayTitle} - ${timeTitle}
-Entry without female companion is not allowed. Please select your group structure:`
-    : `Seçim: ${dayTitle} - ${timeTitle}
-Plajımıza damsız giriş yapılamamaktadır. Lütfen grubunuzun yapısını ve kişi sayısını seçin:`;
+  const bodyText = lang === 'en'
+    ? `Selection: ${dayTitle} - ${timeTitle}\nNo single men allowed. Please select the number of people:\n\n⚠️ Important: This reservation is only for the shuttle service. No separate reservation is made for beach entry.`
+    : `Seçim: ${dayTitle} - ${timeTitle}\nPlajımıza damsız giriş yapılamamaktadır. Lütfen kişi sayısını seçiniz:\n\n⚠️ Önemli: Bu kısımda yapılan rezervasyon sadece shuttle servisi içindir. Plaj içerisi için ayrı bir rezervasyon yapılmamaktadır.`;
   
-  const btnText = lang === 'en' ? "👥 Select Group Type" : "👥 Grup Tipi Seçin";
-  const validGroupsTitle = lang === 'en' ? "Valid Groups" : "Uygun Gruplar";
-  const invalidGroupTitle = lang === 'en' ? "Invalid Group" : "Uygun Olmayan Grup";
+  const btnText = lang === 'en' ? "👥 Select Number of People" : "👥 Kişi sayısı seçiniz";
+  const validGroupsTitle = lang === 'en' ? "Valid Options" : "Uygun Gruplar";
+  const invalidGroupTitle = lang === 'en' ? "Invalid Options" : "Uygun Olmayan Gruplar";
 
   const rows = lang === 'en' ? [
     { id: "grup_kadin_1", title: "👩 1 Woman (1 Person)" },

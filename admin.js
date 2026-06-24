@@ -42,6 +42,12 @@ async function handleAdminFlow(phone, message, session) {
   const textBody = message.type === 'text' ? message.text.body.trim().replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase() : '';
   const isTextCancel = message.type === 'text' && (textBody === 'iptal' || textBody === 'çıkış');
   
+  const isButtonAnaMenu = message.type === 'interactive' && message.interactive.button_reply && message.interactive.button_reply.id === 'menu_ana';
+  if (isButtonAnaMenu) {
+    updateSession(phone, { admin_step: 1 });
+    return sendAdminMainMenu(phone);
+  }
+
   if (isButtonCancel || isTextCancel) {
     resetSession(phone);
     const { sendMainMenu } = require('./whatsapp');
@@ -136,28 +142,53 @@ async function handleAdminFlow(phone, message, session) {
     const filtered = templates.filter(t => t.gun_tipi === gun);
     
     if (filtered.length === 0) {
-      resetSession(phone);
-      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: `Sistemde ${gun} için kayıtlı sefer bulunmuyor.` } });
+      updateSession(phone, { admin_step: 1 });
+      return sendMessage({
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "interactive",
+        interactive: {
+          type: "button",
+          body: { text: `Sistemde ${gun} için kayıtlı sefer bulunmuyor.` },
+          action: { buttons: [{ type: "reply", reply: { id: "menu_ana", title: "🏠 Ana Menü" } }] }
+        }
+      });
     }
     
-    const rows = filtered.slice(0, 30).map(t => ({
+    const rows = filtered.slice(0, 10).map(t => ({
       id: `del_tmp_${t.id}`,
-      title: `${t.saat} ${t.kalkis_yeri}`,
+      title: `${t.saat} ${t.kalkis_yeri}`.substring(0, 24),
       description: `${t.gun_tipi} - ${t.yon}`
     }));
     
     updateSession(phone, { admin_step: 99 });
-    return sendMessage({
-      messaging_product: "whatsapp",
-      to: phone,
-      type: "interactive",
-      interactive: {
-        type: "list",
-        header: { type: "text", text: `🗑️ ${gun} Seferleri` },
-        body: { text: "Aşağıdaki listeden silmek istediğiniz saati seçin:" },
-        action: { button: "Seç", sections: [{ title: "Kayıtlı Saatler", rows: rows }] }
-      }
-    });
+    try {
+      await sendMessage({
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "interactive",
+        interactive: {
+          type: "list",
+          header: { type: "text", text: `🗑️ ${gun} Seferleri` },
+          body: { text: "Aşağıdaki listeden silmek istediğiniz saati seçin:" },
+          action: { button: "Seç", sections: [{ title: "Kayıtlı Saatler", rows: rows }] }
+        }
+      });
+    } catch (e) {
+      console.error("Error sending delete list:", e);
+      updateSession(phone, { admin_step: 1 });
+      return sendMessage({
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "interactive",
+        interactive: {
+          type: "button",
+          body: { text: "Hata! Çok fazla uzun sefer adı var veya liste oluşturulamadı." },
+          action: { buttons: [{ type: "reply", reply: { id: "menu_ana", title: "🏠 Ana Menü" } }] }
+        }
+      });
+    }
+    return;
   }
 
   // Deletion Step 2: Trip Selected -> Delete
@@ -168,23 +199,90 @@ async function handleAdminFlow(phone, message, session) {
     
     try {
       await removeTripTemplateById(tripId);
-      resetSession(phone);
-      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: `✅ ${title} menüden başarıyla SİLİNDİ.` } });
+      updateSession(phone, { admin_step: 1 });
+      return sendMessage({
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "interactive",
+        interactive: {
+          type: "button",
+          body: { text: `✅ ${title} menüden başarıyla SİLİNDİ.` },
+          action: { buttons: [{ type: "reply", reply: { id: "menu_ana", title: "🏠 Ana Menü" } }] }
+        }
+      });
     } catch (e) {
-      resetSession(phone);
-      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "❌ Silme işlemi başarısız oldu." } });
+      updateSession(phone, { admin_step: 1 });
+      return sendMessage({
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "interactive",
+        interactive: {
+          type: "button",
+          body: { text: "❌ Silme işlemi başarısız oldu." },
+          action: { buttons: [{ type: "reply", reply: { id: "menu_ana", title: "🏠 Ana Menü" } }] }
+        }
+      });
     }
   }
 
-  // Step 2: Gun Tipi Selected -> Ask Yon
+  // Step 2: Gun Tipi Selected -> Ask Yon (or specific day for Haftaici)
   if (session.admin_step === 2 && message.type === 'interactive') {
     const gunId = message.interactive.button_reply.id;
+    if (gunId.includes('haftaici')) {
+      updateSession(phone, { admin_step: 25 });
+      return sendMessage({
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "interactive",
+        interactive: {
+          type: "list",
+          header: { type: "text", text: "📅 Gün Seçimi" },
+          body: { text: "Hangi güne eklemek istiyorsunuz?" },
+          action: {
+            button: "Gün Seç",
+            sections: [{
+              title: "Haftaiçi Günleri",
+              rows: [
+                { id: "add_day_Haftaici", title: "Tüm Haftaiçi" },
+                { id: "add_day_Pazartesi", title: "Pazartesi" },
+                { id: "add_day_Salı", title: "Salı" },
+                { id: "add_day_Çarşamba", title: "Çarşamba" },
+                { id: "add_day_Perşembe", title: "Perşembe" },
+                { id: "add_day_Cuma", title: "Cuma" }
+              ]
+            }]
+          }
+        }
+      });
+    }
+
     let gun = "Haftasonu";
-    if (gunId.includes('haftaici')) gun = "Haftaici";
     if (gunId.includes('hergun')) gun = "Hergün";
     
     updateSession(phone, { admin_step: 3, admin_gun: gun });
     
+    return sendMessage({
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: { text: "Yönü seçin:" },
+        action: {
+          buttons: [
+            { type: "reply", reply: { id: "add_yon_gidis", title: "Gidiş" } },
+            { type: "reply", reply: { id: "add_yon_donus", title: "Dönüş" } }
+          ]
+        }
+      }
+    });
+  }
+
+  // Step 2.5: Specific Day Selected -> Ask Yon
+  if (session.admin_step === 25 && message.type === 'interactive' && message.interactive.list_reply) {
+    const dayId = message.interactive.list_reply.id.replace('add_day_', '');
+    updateSession(phone, { admin_step: 3, admin_gun: dayId });
+
     return sendMessage({
       messaging_product: "whatsapp",
       to: phone,
@@ -257,17 +355,30 @@ async function handleAdminFlow(phone, message, session) {
 
     try {
       await addTripTemplate(session.admin_yon, session.admin_kalkis, formattedSaat, session.admin_gun);
-      resetSession(phone);
+      updateSession(phone, { admin_step: 1 });
       return sendMessage({
         messaging_product: "whatsapp",
         to: phone,
-        type: "text",
-        text: { body: `🎉 Başarılı! \n\n${session.admin_gun} - ${session.admin_yon}\n${session.admin_kalkis} - ${formattedSaat}\n\nSaat başarıyla eklendi ve anında WhatsApp menüsüne yansıdı.` }
+        type: "interactive",
+        interactive: {
+          type: "button",
+          body: { text: `🎉 Başarılı! \n\n${session.admin_gun} - ${session.admin_yon}\n${session.admin_kalkis} - ${formattedSaat}\n\nSaat başarıyla eklendi.` },
+          action: { buttons: [{ type: "reply", reply: { id: "menu_ana", title: "🏠 Ana Menü" } }] }
+        }
       });
     } catch (e) {
       console.error(e);
-      resetSession(phone);
-      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "❌ Kayıt sırasında bir hata oluştu." } });
+      updateSession(phone, { admin_step: 1 });
+      return sendMessage({
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "interactive",
+        interactive: {
+          type: "button",
+          body: { text: "❌ Kayıt sırasında bir hata oluştu." },
+          action: { buttons: [{ type: "reply", reply: { id: "menu_ana", title: "🏠 Ana Menü" } }] }
+        }
+      });
     }
   }
 
