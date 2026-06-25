@@ -306,7 +306,10 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
     
     // Format Title
     let displayKalkis = rawKalkis;
-    if (tmp.yon === 'Donus') displayKalkis = "Dönüş"; // Since return is always from Beach, just show "Dönüş 17:00"
+    if (tmp.yon === 'Donus') {
+      displayKalkis = lang === 'en' ? "Return to Hacıosman" : "Hacıosman Metro Dönüşü";
+      emoji = "🟢";
+    }
     
     const title = `${emoji} ${displayKalkis} ${tmp.saat}`;
     const id = `sefer_${tmp.id}`;
