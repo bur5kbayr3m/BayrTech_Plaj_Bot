@@ -257,6 +257,27 @@ app.post('/webhook', async (req, res) => {
             const newStatus = isApproved ? 'Onaylandı' : 'Reddedildi';
             
             try {
+              if (isApproved) {
+                const { supabase, getApprovedCapacity, getTripCapacity } = require('./supabase');
+                const { data: currentRes } = await supabase.from('reservations').select('kisi_sayisi, durum, sefer_id').eq('id', reservationId).single();
+                
+                if (currentRes && currentRes.durum !== 'Onaylandı') {
+                  const trip = await getTripCapacity(currentRes.sefer_id);
+                  const currentApproved = await getApprovedCapacity(currentRes.sefer_id);
+                  
+                  if (currentApproved + currentRes.kisi_sayisi > trip.toplam_kapasite) {
+                    await sendMessage({
+                      messaging_product: "whatsapp",
+                      recipient_type: "individual",
+                      to: adminPhoneNorm,
+                      type: "text",
+                      text: { body: `❌ Onay başarısız! Bu seferde halihazırda onaylanmış ${currentApproved} kişi var. Kalan boş yer: ${trip.toplam_kapasite - currentApproved}. Müşteri ${currentRes.kisi_sayisi} kişi olduğu için kapasiteyi (15) aşıyor. Lütfen ⚠️ Dolu (Yönlendir) butonunu kullanın veya kapasiteyi artırın.` }
+                    });
+                    return res.sendStatus(200);
+                  }
+                }
+              }
+
               const updatedRes = await updateReservationStatus(reservationId, newStatus);
               if (updatedRes && updatedRes.tel_no) {
                 const kalkisYeri = updatedRes.trips && updatedRes.trips.kalkis_yeri ? updatedRes.trips.kalkis_yeri.toLowerCase() : '';

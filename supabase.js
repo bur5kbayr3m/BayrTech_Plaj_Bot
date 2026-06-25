@@ -331,6 +331,13 @@ async function getTripCapacityDetails(seferId) {
   };
 }
 
+async function getApprovedCapacity(seferId) {
+  const { data: resData } = await supabase.from('reservations').select('kisi_sayisi').eq('sefer_id', seferId).eq('durum', 'Onaylandı');
+  let totalPax = 0;
+  if (resData) resData.forEach(r => totalPax += r.kisi_sayisi);
+  return totalPax;
+}
+
 module.exports = {
   supabase,
   saveReservation,
@@ -345,5 +352,6 @@ module.exports = {
   addTripTemplate,
   removeTripTemplate,
   removeTripTemplateById,
-  getTripCapacityDetails
+  getTripCapacityDetails,
+  getApprovedCapacity
 };
