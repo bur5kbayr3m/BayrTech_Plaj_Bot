@@ -321,6 +321,10 @@ app.post('/webhook', async (req, res) => {
               const errStr = JSON.stringify(err);
               if (errStr.includes('23514') || errStr.includes('capacity') || (err.message && err.message.includes('capacity'))) {
                 errMsg = "❌ Onay başarısız! Bu seferin araç kapasitesi dolmuştur. Lütfen ⚠️ Dolu (Yönlendir) butonunu kullanın veya kapasiteyi artırın.";
+              } else if (errStr.includes('131047') || errStr.includes('24 hour') || (err.response && err.response.data && JSON.stringify(err.response.data).includes('131047'))) {
+                errMsg = "⚠️ Rezervasyon ONAYLANDI ancak müşterinin (+" + (updatedRes ? updatedRes.tel_no : "Bilinmiyor") + ") son mesajının üzerinden 24 saat geçtiği için WhatsApp API kuralları gereği otomatik SMS iletilemedi. Lütfen müşteriye normal WhatsApp üzerinden ulaşıp bilgi veriniz.";
+              } else if (errStr.includes('131026') || errStr.includes('invalid') || errStr.includes('undeliverable')) {
+                errMsg = "⚠️ Rezervasyon ONAYLANDI ancak müşterinin (+" + (updatedRes ? updatedRes.tel_no : "Bilinmiyor") + ") numarası WhatsApp'ta bulunamadığı/geçersiz olduğu için mesaj iletilemedi. Lütfen manuel ulaşmayı deneyin.";
               }
               await sendMessage({
                 messaging_product: "whatsapp",
