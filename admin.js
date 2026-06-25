@@ -528,6 +528,8 @@ async function handleAdminFlow(phone, message, session) {
       const reservations = await getDailyReservations(dayStr);
       const activeRes = reservations.filter(r => r.durum === 'Beklemede' || r.durum === 'Onaylandı');
       
+      let filteredRes = [];
+
       if (selectedKey === 'res_all_trips') {
          let msgBody = `📋 *TÜM SEFERLER* (${dayStr})\n\n`;
          let overallTotal = 0;
@@ -559,33 +561,30 @@ async function handleAdminFlow(phone, message, session) {
          });
          msgBody += `*Genel Toplam Yolcu: ${overallTotal}*`;
          
-         resetSession(phone);
-         return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: msgBody } });
-      }
-
-      let filteredRes = [];
-      if (selectedKey.startsWith('res_trip_')) {
-        const tripId = selectedKey.replace('res_trip_', '');
-        filteredRes = activeRes.filter(r => r.trip_id === tripId);
+         await sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: msgBody } });
+         filteredRes = activeRes;
       } else {
-        // Fallback matching
-        const parts = selectedKey.replace('res_key_', '').split('_');
-        filteredRes = activeRes.filter(r => r.trips && r.trips.saat.startsWith(parts[0]));
+         if (selectedKey.startsWith('res_trip_')) {
+           const tripId = selectedKey.replace('res_trip_', '');
+           filteredRes = activeRes.filter(r => r.trip_id === tripId);
+         } else {
+           const parts = selectedKey.replace('res_key_', '').split('_');
+           filteredRes = activeRes.filter(r => r.trips && r.trips.saat.startsWith(parts[0]));
+         }
+         
+         let msgBody = `🚐 *${title}* (${dayStr})\n\n`;
+         let totalPax = 0;
+         
+         filteredRes.forEach(res => {
+           msgBody += `👤 *${res.ad_soyad}* (${res.kisi_sayisi} Kişi)\n`;
+           msgBody += `📱 Müşteri: +${res.tel_no}\n`;
+           msgBody += `Durum: ${res.durum}\n\n`;
+           totalPax += res.kisi_sayisi;
+         });
+         
+         msgBody += `*Toplam Yolcu: ${totalPax}*`;
+         await sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: msgBody } });
       }
-      
-      let msgBody = `🚐 *${title}* (${dayStr})\n\n`;
-      let totalPax = 0;
-      
-      filteredRes.forEach(res => {
-        msgBody += `👤 *${res.ad_soyad}* (${res.kisi_sayisi} Kişi)\n`;
-        msgBody += `📱 Müşteri: +${res.tel_no}\n`;
-        msgBody += `Durum: ${res.durum}\n\n`;
-        totalPax += res.kisi_sayisi;
-      });
-      
-      msgBody += `*Toplam Yolcu: ${totalPax}*`;
-      
-      await sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: msgBody } });
       
       if (filteredRes.length > 0) {
         const rows = filteredRes.map(r => ({
@@ -595,11 +594,13 @@ async function handleAdminFlow(phone, message, session) {
         }));
         
         const sections = [];
-        if (rows.length > 10) {
-          sections.push({ title: "Yolcular 1", rows: rows.slice(0, 10) });
-          sections.push({ title: "Yolcular 2", rows: rows.slice(10, 20) });
-        } else {
-          sections.push({ title: "Yolcular", rows: rows });
+        for (let i = 0; i < rows.length; i += 10) {
+          const pageNum = Math.floor(i / 10) + 1;
+          if (pageNum > 10) break; // WhatsApp max 10 sections
+          sections.push({
+            title: `Yolcular ${pageNum}`,
+            rows: rows.slice(i, i + 10)
+          });
         }
 
         updateSession(phone, { admin_step: 103 });
@@ -610,7 +611,7 @@ async function handleAdminFlow(phone, message, session) {
           interactive: {
             type: "list",
             header: { type: "text", text: "❌ Rezervasyon İptali" },
-            body: { text: "Bu seferden bir rezervasyonu iptal etmek isterseniz aşağıdaki listeden seçebilirsiniz:" },
+            body: { text: "İptal etmek istediğiniz rezervasyonu listeden seçebilirsiniz:" },
             action: { button: "Yolcu Seç", sections: sections }
           }
         });
@@ -674,10 +675,7 @@ async function handleAdminFlow(phone, message, session) {
         await cancelReservation(resId);
         
         if (resData) {
-          const customerSession = getSession(resData.tel_no) || { lang: 'tr' };
-          const cancelMsg = customerSession.lang === 'en' 
-            ? "❌ Your reservation has been cancelled by the administration." 
-            : "❌ Rezervasyonunuz yönetim tarafından iptal edilmiştir.";
+          const cancelMsg = "❌ Rezervasyonunuz yönetim tarafından iptal edilmiştir.";
           
           await sendMessage({
             messaging_product: "whatsapp",
