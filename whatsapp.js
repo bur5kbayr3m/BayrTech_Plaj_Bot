@@ -392,13 +392,17 @@ async function sendGroupSelectionList(phone, dayTitle, timeTitle, lang = 'tr') {
     { id: "grup_kadin_2", title: "👩‍🦰 2 Women (2 Ppl)" },
     { id: "grup_kadin_3", title: "👩‍🦰 3+ Women Group" },
     { id: "grup_karma_2", title: "👫 1 W / 1 M" },
-    { id: "grup_karma_3", title: "👨‍👩‍👧‍👦 Mixed (3 Ppl)" }
+    { id: "grup_karma_3", title: "👨‍👩‍👧‍👦 Mixed (3 Ppl)" },
+    { id: "grup_aile_4", title: "👨‍👩‍👧‍👦 Family (4 Ppl)" },
+    { id: "grup_aile_5", title: "👨‍👩‍👧‍👦 Family (5 Ppl)" }
   ] : [
     { id: "grup_kadin_1", title: "👩 1 Kadın (1 Kişi)" },
     { id: "grup_kadin_2", title: "👩‍🦰 2 Kadın (2 Kişi)" },
     { id: "grup_kadin_3", title: "👩‍🦰 3+ Kadın Grubu" },
     { id: "grup_karma_2", title: "👫 1 Kadın 1 Erkek" },
-    { id: "grup_karma_3", title: "👨‍👩‍👧‍👦 Karma (3 Kişi)" }
+    { id: "grup_karma_3", title: "👨‍👩‍👧‍👦 Karma (3 Kişi)" },
+    { id: "grup_aile_4", title: "👨‍👩‍👧‍👦 Aile (4 Kişi)" },
+    { id: "grup_aile_5", title: "👨‍👩‍👧‍👦 Aile (5 Kişi)" }
   ];
 
   const invalidRows = lang === 'en' ? [

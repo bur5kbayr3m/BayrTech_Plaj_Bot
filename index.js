@@ -373,7 +373,20 @@ app.post('/webhook', async (req, res) => {
               await sendLanguageSelection(phone);
               return res.sendStatus(200);
             }
-            session = updateSession(phone, { step: 3, selected_time: replyTitle });
+            const seferId = replyId.replace('sefer_', '');
+            
+            const { getTripCapacityDetails } = require('./supabase');
+            const cap = await getTripCapacityDetails(seferId);
+            
+            if (cap.isFull) {
+              const errMsg = session.lang === 'en'
+                ? "❌ Sorry, this shuttle is fully booked (including pending requests). Please select another time."
+                : "❌ Maalesef seçtiğiniz seferin kontenjanı tamamen dolmuştur (bekleyen onay sürecindeki talepler dahil). Lütfen farklı bir saat seçin.";
+              await sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: errMsg } });
+              return res.sendStatus(200);
+            }
+            
+            session = updateSession(phone, { step: 3, selected_time: replyTitle, selected_trip_id: seferId, remaining_cap: cap.remaining });
             await sendGroupSelectionList(phone, session.selected_day, session.selected_time, session.lang);
           }
           else if (replyId.startsWith('grup_')) {
@@ -401,6 +414,15 @@ app.post('/webhook', async (req, res) => {
             }
 
             const countNum = parseInt(replyId.split('_').pop()) || 1;
+            
+            if (session.remaining_cap !== undefined && countNum > session.remaining_cap) {
+               const errMsg = session.lang === 'en'
+                 ? `❌ Sorry, there are only ${session.remaining_cap} spots left on this shuttle. You cannot book for ${countNum} people. Please select another time or reduce your group size.`
+                 : `❌ Maalesef bu seferde sadece ${session.remaining_cap} kişilik boş yer kalmıştır. ${countNum} kişi için rezervasyon alamıyoruz. Lütfen farklı bir saat seçin veya kişi sayısını azaltın.`;
+               await sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: errMsg } });
+               return res.sendStatus(200);
+            }
+
             session = updateSession(phone, { step: 4, selected_count: replyTitle, selected_count_num: countNum });
             await sendNameRequestMessage(phone, session.lang);
           }

@@ -317,6 +317,20 @@ async function removeTripTemplateById(id) {
   if (error) throw error;
 }
 
+async function getTripCapacityDetails(seferId) {
+  const { data: trip } = await supabase.from('trips').select('toplam_kapasite').eq('id', seferId).single();
+  if (!trip) return { isFull: false, remaining: 15 };
+  
+  const { data: resData } = await supabase.from('reservations').select('kisi_sayisi').eq('sefer_id', seferId).in('durum', ['Onaylandı', 'Beklemede']);
+  let totalPax = 0;
+  if (resData) resData.forEach(r => totalPax += r.kisi_sayisi);
+  
+  return { 
+    isFull: totalPax >= trip.toplam_kapasite, 
+    remaining: trip.toplam_kapasite - totalPax 
+  };
+}
+
 module.exports = {
   supabase,
   saveReservation,
@@ -330,5 +344,6 @@ module.exports = {
   getTripTemplates,
   addTripTemplate,
   removeTripTemplate,
-  removeTripTemplateById
+  removeTripTemplateById,
+  getTripCapacityDetails
 };
