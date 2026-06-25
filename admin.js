@@ -480,11 +480,17 @@ async function handleAdminFlow(phone, message, session) {
         grouped[internalKey].pax += (res.kisi_sayisi || 1);
       });
       
-      const rows = Object.keys(grouped).slice(0, 10).map(key => ({
+      const rows = Object.keys(grouped).slice(0, 9).map(key => ({
         id: key,
         title: grouped[key].title.substring(0, 24),
         description: `Toplam: ${grouped[key].pax} Kişi`
       }));
+      
+      rows.unshift({
+        id: 'res_all_trips',
+        title: 'Tüm Seferler',
+        description: `${dayStr} tarihindeki tüm seferler`
+      });
       
       updateSession(phone, { admin_step: 102, res_day: dayStr });
       
@@ -522,6 +528,41 @@ async function handleAdminFlow(phone, message, session) {
       const reservations = await getDailyReservations(dayStr);
       const activeRes = reservations.filter(r => r.durum === 'Beklemede' || r.durum === 'Onaylandı');
       
+      if (selectedKey === 'res_all_trips') {
+         let msgBody = `📋 *TÜM SEFERLER* (${dayStr})\n\n`;
+         let overallTotal = 0;
+         
+         const groupedRes = {};
+         activeRes.forEach(r => {
+           const trip = r.trips || {};
+           const saat = trip.saat ? trip.saat.substring(0, 5) : '00:00';
+           const kalkis = trip.kalkis_yeri ? trip.kalkis_yeri.substring(0, 10) : 'Bilinmeyen';
+           const yon = trip.yon === 'Gidis' ? 'Gidiş' : 'Dönüş';
+           const k = `🚐 *${saat} ${kalkis} (${yon.substring(0,1)})*`;
+           
+           if (!groupedRes[k]) groupedRes[k] = [];
+           groupedRes[k].push(r);
+         });
+         
+         Object.keys(groupedRes).forEach(k => {
+           msgBody += `${k}\n\n`;
+           let tripTotal = 0;
+           groupedRes[k].forEach(res => {
+             msgBody += `👤 *${res.ad_soyad}* (${res.kisi_sayisi} Kişi)\n`;
+             msgBody += `📱 Müşteri: +${res.tel_no}\n`;
+             msgBody += `Durum: ${res.durum}\n\n`;
+             tripTotal += res.kisi_sayisi;
+             overallTotal += res.kisi_sayisi;
+           });
+           msgBody += `*Sefer Toplamı: ${tripTotal}*\n`;
+           msgBody += `---------------------------\n\n`;
+         });
+         msgBody += `*Genel Toplam Yolcu: ${overallTotal}*`;
+         
+         resetSession(phone);
+         return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: msgBody } });
+      }
+
       let filteredRes = [];
       if (selectedKey.startsWith('res_trip_')) {
         const tripId = selectedKey.replace('res_trip_', '');
