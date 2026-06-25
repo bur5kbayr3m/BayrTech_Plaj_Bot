@@ -229,13 +229,13 @@ app.post('/webhook', async (req, res) => {
             const { increaseTripCapacity } = require('./supabase');
             const { sendMessage } = require('./whatsapp');
             try {
-              await increaseTripCapacity(seferId, 16);
+              await increaseTripCapacity(seferId, 15);
               await sendMessage({
                 messaging_product: "whatsapp",
                 recipient_type: "individual",
                 to: adminPhoneNorm,
                 type: "text",
-                text: { body: "✅ Kapasite başarıyla +16 artırıldı. Bekleyen talepleri onaylayabilirsiniz!" }
+                text: { body: "✅ Kapasite başarıyla +15 artırıldı. Bekleyen talepleri onaylayabilirsiniz!" }
               });
             } catch (err) {
               console.error(err);
@@ -286,7 +286,7 @@ app.post('/webhook', async (req, res) => {
                   const { getTripCapacity } = require('./supabase');
                   const trip = await getTripCapacity(updatedRes.sefer_id);
                   if (trip && trip.rezerve_edilen >= trip.toplam_kapasite) {
-                    const alertMsg = `🚨 *DİKKAT: KAPASİTE DOLDU!* 🚨\n\n${trip.tarih} ${trip.saat} ${trip.kalkis_yeri} seferi TAMAMEN DOLDU (Kapasite: ${trip.toplam_kapasite}/${trip.toplam_kapasite})!\n\nEk araç tanımlamak (Kapasiteyi +16 artırmak) ister misiniz?`;
+                    const alertMsg = `🚨 *DİKKAT: KAPASİTE DOLDU!* 🚨\n\n${trip.tarih} ${trip.saat} ${trip.kalkis_yeri} seferi TAMAMEN DOLDU (Kapasite: ${trip.toplam_kapasite}/${trip.toplam_kapasite})!\n\nEk araç tanımlamak (Kapasiteyi +15 artırmak) ister misiniz?`;
                     await sendMessage({
                       messaging_product: "whatsapp",
                       recipient_type: "individual",
@@ -297,7 +297,7 @@ app.post('/webhook', async (req, res) => {
                         body: { text: alertMsg },
                         action: {
                           buttons: [
-                            { type: "reply", reply: { id: `add_cap_${updatedRes.sefer_id}`, title: "➕ +16 Artır" } }
+                            { type: "reply", reply: { id: `add_cap_${updatedRes.sefer_id}`, title: "➕ +15 Artır" } }
                           ]
                         }
                       }

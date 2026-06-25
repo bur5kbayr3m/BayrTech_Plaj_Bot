@@ -68,7 +68,7 @@ async function saveReservation({ phone, name, day, time, passenger_count }) {
         yon: yon,
         kalkis_yeri: kalkis,
         varis_yeri: yon === 'Gidis' ? 'Plaj' : 'Haciosman Metro',
-        toplam_kapasite: 16,
+        toplam_kapasite: 15,
         rezerve_edilen: 0,
         aktif: true
       }])
