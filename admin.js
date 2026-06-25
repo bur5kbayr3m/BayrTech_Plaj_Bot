@@ -549,7 +549,7 @@ async function handleAdminFlow(phone, message, session) {
          Object.keys(groupedRes).forEach(k => {
            msgBody += `${k}\n\n`;
            let tripTotal = 0;
-           let capacityStr = "";
+           let cap = null;
            groupedRes[k].forEach(res => {
              msgBody += `👤 *${res.ad_soyad}* (${res.kisi_sayisi} Kişi)\n`;
              msgBody += `📱 Müşteri: +${res.tel_no}\n`;
@@ -557,14 +557,14 @@ async function handleAdminFlow(phone, message, session) {
              tripTotal += res.kisi_sayisi;
              overallTotal += res.kisi_sayisi;
 
-             if (!capacityStr && res.trips && res.trips.toplam_kapasite) {
-               const cap = res.trips.toplam_kapasite;
-               const occ = res.trips.rezerve_edilen || 0;
-               capacityStr = `📊 *Kontenjan:* ${occ} / ${cap} Dolu *(Boş: ${cap - occ})*`;
+             if (!cap && res.trips && res.trips.toplam_kapasite) {
+               cap = res.trips.toplam_kapasite;
              }
            });
            msgBody += `*Sefer Toplamı: ${tripTotal}*\n`;
-           if (capacityStr) msgBody += `${capacityStr}\n`;
+           if (cap) {
+             msgBody += `📊 *Kontenjan:* ${tripTotal} / ${cap} Dolu *(Boş: ${cap - tripTotal})*\n`;
+           }
            msgBody += `---------------------------\n\n`;
          });
          msgBody += `*Genel Toplam Yolcu: ${overallTotal}*`;
@@ -582,7 +582,7 @@ async function handleAdminFlow(phone, message, session) {
          
          let msgBody = `🚐 *${title}* (${dayStr})\n\n`;
          let totalPax = 0;
-         let capacityStr = "";
+         let cap = null;
          
          filteredRes.forEach(res => {
            msgBody += `👤 *${res.ad_soyad}* (${res.kisi_sayisi} Kişi)\n`;
@@ -590,19 +590,19 @@ async function handleAdminFlow(phone, message, session) {
            msgBody += `Durum: ${res.durum}\n\n`;
            totalPax += res.kisi_sayisi;
 
-           if (!capacityStr && res.trips && res.trips.toplam_kapasite) {
-             const cap = res.trips.toplam_kapasite;
-             const occ = res.trips.rezerve_edilen || 0;
-             capacityStr = `\n📊 *Kontenjan:* ${occ} / ${cap} Dolu\n*(Kalan Boş Yer: ${cap - occ})*\n`;
+           if (!cap && res.trips && res.trips.toplam_kapasite) {
+             cap = res.trips.toplam_kapasite;
            }
          });
          
          msgBody += `*Toplam Yolcu: ${totalPax}*`;
-         if (capacityStr) msgBody += capacityStr;
+         if (cap) {
+           msgBody += `\n📊 *Kontenjan:* ${totalPax} / ${cap} Dolu\n*(Kalan Boş Yer: ${cap - totalPax})*\n`;
+         }
          await sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: msgBody } });
       }
       
-      if (filteredRes.length > 0) {
+      if (filteredRes.length > 0 && selectedKey !== 'res_all_trips') {
         const rows = filteredRes.map(r => ({
            id: `adm_can_${r.id}`,
            title: r.ad_soyad.substring(0, 24),
