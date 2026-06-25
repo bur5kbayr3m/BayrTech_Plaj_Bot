@@ -161,7 +161,9 @@ async function getDailyReservations(targetDateStr) {
         tarih,
         saat,
         kalkis_yeri,
-        varis_yeri
+        varis_yeri,
+        toplam_kapasite,
+        rezerve_edilen
       )
     `);
     

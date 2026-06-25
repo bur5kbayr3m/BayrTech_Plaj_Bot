@@ -549,14 +549,22 @@ async function handleAdminFlow(phone, message, session) {
          Object.keys(groupedRes).forEach(k => {
            msgBody += `${k}\n\n`;
            let tripTotal = 0;
+           let capacityStr = "";
            groupedRes[k].forEach(res => {
              msgBody += `👤 *${res.ad_soyad}* (${res.kisi_sayisi} Kişi)\n`;
              msgBody += `📱 Müşteri: +${res.tel_no}\n`;
              msgBody += `Durum: ${res.durum}\n\n`;
              tripTotal += res.kisi_sayisi;
              overallTotal += res.kisi_sayisi;
+
+             if (!capacityStr && res.trips && res.trips.toplam_kapasite) {
+               const cap = res.trips.toplam_kapasite;
+               const occ = res.trips.rezerve_edilen || 0;
+               capacityStr = `📊 *Kontenjan:* ${occ} / ${cap} Dolu *(Boş: ${cap - occ})*`;
+             }
            });
            msgBody += `*Sefer Toplamı: ${tripTotal}*\n`;
+           if (capacityStr) msgBody += `${capacityStr}\n`;
            msgBody += `---------------------------\n\n`;
          });
          msgBody += `*Genel Toplam Yolcu: ${overallTotal}*`;
@@ -574,15 +582,23 @@ async function handleAdminFlow(phone, message, session) {
          
          let msgBody = `🚐 *${title}* (${dayStr})\n\n`;
          let totalPax = 0;
+         let capacityStr = "";
          
          filteredRes.forEach(res => {
            msgBody += `👤 *${res.ad_soyad}* (${res.kisi_sayisi} Kişi)\n`;
            msgBody += `📱 Müşteri: +${res.tel_no}\n`;
            msgBody += `Durum: ${res.durum}\n\n`;
            totalPax += res.kisi_sayisi;
+
+           if (!capacityStr && res.trips && res.trips.toplam_kapasite) {
+             const cap = res.trips.toplam_kapasite;
+             const occ = res.trips.rezerve_edilen || 0;
+             capacityStr = `\n📊 *Kontenjan:* ${occ} / ${cap} Dolu\n*(Kalan Boş Yer: ${cap - occ})*\n`;
+           }
          });
          
          msgBody += `*Toplam Yolcu: ${totalPax}*`;
+         if (capacityStr) msgBody += capacityStr;
          await sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: msgBody } });
       }
       
