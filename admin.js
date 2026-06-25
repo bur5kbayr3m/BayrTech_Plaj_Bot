@@ -585,12 +585,116 @@ async function handleAdminFlow(phone, message, session) {
       
       msgBody += `*Toplam Yolcu: ${totalPax}*`;
       
+      await sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: msgBody } });
+      
+      if (filteredRes.length > 0) {
+        const rows = filteredRes.map(r => ({
+           id: `adm_can_${r.id}`,
+           title: r.ad_soyad.substring(0, 24),
+           description: `+${r.tel_no} - ${r.kisi_sayisi} Kişi`
+        }));
+        
+        const sections = [];
+        if (rows.length > 10) {
+          sections.push({ title: "Yolcular 1", rows: rows.slice(0, 10) });
+          sections.push({ title: "Yolcular 2", rows: rows.slice(10, 20) });
+        } else {
+          sections.push({ title: "Yolcular", rows: rows });
+        }
+
+        updateSession(phone, { admin_step: 103 });
+        return sendMessage({
+          messaging_product: "whatsapp",
+          to: phone,
+          type: "interactive",
+          interactive: {
+            type: "list",
+            header: { type: "text", text: "❌ Rezervasyon İptali" },
+            body: { text: "Bu seferden bir rezervasyonu iptal etmek isterseniz aşağıdaki listeden seçebilirsiniz:" },
+            action: { button: "Yolcu Seç", sections: sections }
+          }
+        });
+      }
+      
       resetSession(phone);
-      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: msgBody } });
+      return;
     } catch (err) {
       console.error("Error in admin_step 102:", err);
       resetSession(phone);
       return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "Detaylar getirilirken bir hata oluştu." } });
+    }
+  }
+
+  // Reservation Step 3: Passenger Selected for Cancellation -> Confirm
+  if (session.admin_step === 103) {
+    if (message.type !== 'interactive' || !message.interactive.list_reply) {
+      resetSession(phone);
+      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "İşlem iptal edildi. Ana menüye dönebilirsiniz." } });
+    }
+    const resId = message.interactive.list_reply.id.replace('adm_can_', '');
+    const resName = message.interactive.list_reply.title;
+    
+    updateSession(phone, { admin_step: 104, cancel_res_id: resId });
+    return sendMessage({
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: { text: `⚠️ *${resName}* isimli yolcunun rezervasyonunu iptal etmek istediğinize emin misiniz?\n\n(Onaylarsanız müşteriye otomatik olarak iptal bilgilendirmesi gönderilecektir.)` },
+        action: {
+          buttons: [
+            { type: "reply", reply: { id: "confirm_adm_cancel_yes", title: "Evet, İptal Et" } },
+            { type: "reply", reply: { id: "confirm_adm_cancel_no", title: "Hayır, Vazgeç" } }
+          ]
+        }
+      }
+    });
+  }
+
+  // Reservation Step 4: Execute Cancellation
+  if (session.admin_step === 104) {
+    if (message.type !== 'interactive' || !message.interactive.button_reply) {
+      resetSession(phone);
+      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "İşlem iptal edildi." } });
+    }
+    
+    const btnId = message.interactive.button_reply.id;
+    if (btnId === 'confirm_adm_cancel_no') {
+      resetSession(phone);
+      return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "İptal işlemi durduruldu. Ana menüye dönebilirsiniz." } });
+    }
+    
+    if (btnId === 'confirm_adm_cancel_yes') {
+      const resId = session.cancel_res_id;
+      try {
+        const { cancelReservation, supabase } = require('./supabase');
+        const { data: resData } = await supabase.from('reservations').select('tel_no, ad_soyad').eq('id', resId).single();
+        
+        await cancelReservation(resId);
+        
+        if (resData) {
+          const customerSession = getSession(resData.tel_no) || { lang: 'tr' };
+          const cancelMsg = customerSession.lang === 'en' 
+            ? "❌ Your reservation has been cancelled by the administration." 
+            : "❌ Rezervasyonunuz yönetim tarafından iptal edilmiştir.";
+          
+          await sendMessage({
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to: resData.tel_no,
+            type: "text",
+            text: { body: cancelMsg }
+          });
+        }
+        
+        resetSession(phone);
+        return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: `✅ *${resData ? resData.ad_soyad : 'Yolcu'}* rezervasyonu başarıyla iptal edildi ve müşteriye bilgi SMS'i gönderildi.` } });
+      } catch(e) {
+        console.error("Admin cancel execution error:", e);
+        resetSession(phone);
+        return sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: "❌ İptal işlemi sırasında bir hata oluştu." } });
+      }
     }
   }
 
