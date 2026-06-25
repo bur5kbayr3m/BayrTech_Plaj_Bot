@@ -150,6 +150,7 @@ app.post('/webhook', async (req, res) => {
           if (replyId === 'cancel_req') {
             const { getLatestReservation } = require('./supabase');
             const latest = await getLatestReservation(phone);
+            
             if (latest && latest.durum === 'Onaylandı') {
               const { sendCancelRequestToAdmin } = require('./whatsapp');
               await sendCancelRequestToAdmin(adminPhoneNorm, latest.id, phone, latest);
@@ -162,6 +163,16 @@ app.post('/webhook', async (req, res) => {
                 to: phone,
                 type: "text",
                 text: { body: userSession.lang === 'en' ? "⏳ Your cancellation request has been sent to the authority. You will be notified once approved." : "⏳ İptal talebiniz yetkiliye iletildi. Onaylandığında size bilgi verilecektir." }
+              });
+            } else {
+              const userSession = getSession(phone);
+              const { sendMessage } = require('./whatsapp');
+              await sendMessage({
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to: phone,
+                type: "text",
+                text: { body: userSession.lang === 'en' ? "❌ This reservation has already been cancelled or processed." : "❌ Bu rezervasyon zaten iptal edilmiş veya işlemi tamamlanmış durumda." }
               });
             }
             return res.sendStatus(200);
