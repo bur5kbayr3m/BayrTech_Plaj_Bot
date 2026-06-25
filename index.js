@@ -348,15 +348,27 @@ app.post('/webhook', async (req, res) => {
             await sendMainMenu(phone, session.lang);
           }
           // Reservation Flow Handle
-          else if (session.step === 1 && replyId.startsWith('day_')) {
+          else if (replyId.startsWith('day_')) {
             session = updateSession(phone, { step: 2, selected_day: replyTitle });
             await sendTripSelectionList(phone, session.selected_day, session.lang);
           } 
-          else if (session.step === 2 && replyId.startsWith('sefer_')) {
+          else if (replyId.startsWith('sefer_')) {
+            if (!session.selected_day) {
+              session = resetSession(phone);
+              await sendLanguageSelection(phone);
+              return res.sendStatus(200);
+            }
             session = updateSession(phone, { step: 3, selected_time: replyTitle });
             await sendGroupSelectionList(phone, session.selected_day, session.selected_time, session.lang);
           }
-          else if (session.step === 3 && replyId.startsWith('grup_')) {
+          else if (replyId.startsWith('grup_')) {
+            if (session.step === 4) return res.sendStatus(200); // Ignore duplicate click
+            if (!session.selected_day || !session.selected_time) {
+              session = resetSession(phone);
+              await sendLanguageSelection(phone);
+              return res.sendStatus(200);
+            }
+
             if (replyId === 'grup_erkek_iptal') {
               const errMsg = session.lang === 'en' 
                 ? "❌ Sorry, entry without a female companion is not allowed. We cannot accept reservations for all-male groups. Thank you for your understanding."
