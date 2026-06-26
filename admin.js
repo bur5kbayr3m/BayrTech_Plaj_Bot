@@ -40,11 +40,16 @@ async function showDeletionList(phone, gun, session) {
   const templates = await getTripTemplates();
   let filtered = [];
   const specificDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
+  const weekendDays = ["Cumartesi", "Pazar"];
   
   if (specificDays.includes(gun)) {
     filtered = templates.filter(t => t.gun_tipi === 'Haftaici' && t.kalkis_yeri.includes(`(${gun})`));
+  } else if (weekendDays.includes(gun)) {
+    filtered = templates.filter(t => t.gun_tipi === 'Haftasonu' && t.kalkis_yeri.includes(`(${gun})`));
   } else if (gun === 'Haftaici') {
     filtered = templates.filter(t => t.gun_tipi === 'Haftaici' && !t.kalkis_yeri.includes('('));
+  } else if (gun === 'Haftasonu') {
+    filtered = templates.filter(t => t.gun_tipi === 'Haftasonu' && !t.kalkis_yeri.includes('('));
   } else {
     filtered = templates.filter(t => t.gun_tipi === gun);
   }
@@ -452,6 +457,12 @@ async function handleAdminFlow(phone, message, session) {
     const specificDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
     if (specificDays.includes(session.admin_gun)) {
       gunTipi = "Haftaici";
+      finalKalkis = `${session.admin_kalkis} (${session.admin_gun})`;
+    }
+    
+    const weekendDays = ["Cumartesi", "Pazar"];
+    if (weekendDays.includes(session.admin_gun)) {
+      gunTipi = "Haftasonu";
       finalKalkis = `${session.admin_kalkis} (${session.admin_gun})`;
     }
 
