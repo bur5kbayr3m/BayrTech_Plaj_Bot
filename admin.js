@@ -226,9 +226,32 @@ async function handleAdminFlow(phone, message, session) {
       });
     }
 
-    // If Haftasonu or Hergün
-    let gun = "Haftasonu";
-    if (gunId === 'hergun') gun = "Hergün";
+    if (gunId === 'haftasonu') {
+      updateSession(phone, { admin_step: 985 });
+      return sendMessage({
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "interactive",
+        interactive: {
+          type: "list",
+          header: { type: "text", text: "📅 Gün Seçimi" },
+          body: { text: "Hangi günün seferini silmek istiyorsunuz?" },
+          action: {
+            button: "Gün Seç",
+            sections: [{
+              title: "Haftasonu Günleri",
+              rows: [
+                { id: "del_day_Haftasonu", title: "Tüm Haftasonu" },
+                { id: "del_day_Cumartesi", title: "Cumartesi" },
+                { id: "del_day_Pazar", title: "Pazar" }
+              ]
+            }]
+          }
+        }
+      });
+    }
+
+    let gun = "Hergün";
     return showDeletionList(phone, gun, session);
   }
 
@@ -303,9 +326,32 @@ async function handleAdminFlow(phone, message, session) {
       });
     }
 
-    let gun = "Haftasonu";
-    if (gunId.includes('hergun')) gun = "Hergün";
-    
+    if (gunId.includes('haftasonu')) {
+      updateSession(phone, { admin_step: 25 });
+      return sendMessage({
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "interactive",
+        interactive: {
+          type: "list",
+          header: { type: "text", text: "📅 Gün Seçimi" },
+          body: { text: "Hangi güne eklemek istiyorsunuz?" },
+          action: {
+            button: "Gün Seç",
+            sections: [{
+              title: "Haftasonu Günleri",
+              rows: [
+                { id: "add_day_Haftasonu", title: "Tüm Haftasonu" },
+                { id: "add_day_Cumartesi", title: "Cumartesi" },
+                { id: "add_day_Pazar", title: "Pazar" }
+              ]
+            }]
+          }
+        }
+      });
+    }
+
+    let gun = "Hergün";
     updateSession(phone, { admin_step: 3, admin_gun: gun });
     
     return sendMessage({

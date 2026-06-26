@@ -266,10 +266,13 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
   else if (dayTitle.includes('Çarşamba') || dayTitle.includes('Wednesday')) specificDay = "Çarşamba";
   else if (dayTitle.includes('Perşembe') || dayTitle.includes('Thursday')) specificDay = "Perşembe";
   else if (dayTitle.includes('Cuma') || dayTitle.includes('Friday')) specificDay = "Cuma";
+  else if (dayTitle.includes('Cumartesi') || dayTitle.includes('Saturday')) specificDay = "Cumartesi";
+  else if (dayTitle.includes('Pazar') || dayTitle.includes('Sunday')) specificDay = "Pazar";
 
   let dayQuery = null;
   if (isWeekend) {
     dayQuery = ['Haftasonu', 'Hergün'];
+    if (specificDay) dayQuery.push(specificDay);
   } else {
     dayQuery = ['Haftaici', 'Hergün'];
     if (specificDay) dayQuery.push(specificDay);
