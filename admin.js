@@ -405,20 +405,23 @@ async function handleAdminFlow(phone, message, session) {
     
     updateSession(phone, { admin_step: 4, admin_yon: yon });
     
+    let promptText = yon === 'Donus' ? "Gidilecek yeri seçin:" : "Kalkış yerini seçin:";
+    let buttons = [
+      { type: "reply", reply: { id: "add_kalkis_mcd", title: "Mecidiyeköy" } },
+      { type: "reply", reply: { id: "add_kalkis_hac", title: "Hacıosman" } }
+    ];
+    if (yon === 'Gidis') {
+      buttons.push({ type: "reply", reply: { id: "add_kalkis_plaj", title: "Plaj" } });
+    }
+
     return sendMessage({
       messaging_product: "whatsapp",
       to: phone,
       type: "interactive",
       interactive: {
         type: "button",
-        body: { text: "Kalkış yerini seçin:" },
-        action: {
-          buttons: [
-            { type: "reply", reply: { id: "add_kalkis_mcd", title: "Mecidiyeköy" } },
-            { type: "reply", reply: { id: "add_kalkis_hac", title: "Hacıosman" } },
-            { type: "reply", reply: { id: "add_kalkis_plaj", title: "Plaj" } }
-          ]
-        }
+        body: { text: promptText },
+        action: { buttons: buttons }
       }
     });
   }
@@ -603,7 +606,7 @@ async function handleAdminFlow(phone, message, session) {
            groupedRes[k].push(r);
          });
          
-         Object.keys(groupedRes).forEach(k => {
+         Object.keys(groupedRes).sort().forEach(k => {
            msgBody += `${k}\n\n`;
            let tripTotal = 0;
            let cap = null;
@@ -785,8 +788,7 @@ async function startAdminReservationFlow(phone) {
       action: {
         buttons: [
           { type: "reply", reply: { id: "res_day_bugun", title: "Bugün" } },
-          { type: "reply", reply: { id: "res_day_yarin", title: "Yarın" } },
-          { type: "reply", reply: { id: "res_day_diger", title: "3. Gün" } }
+          { type: "reply", reply: { id: "res_day_yarin", title: "Yarın" } }
         ]
       }
     }

@@ -38,7 +38,7 @@ async function sendLanguageSelection(phone) {
     type: "interactive",
     interactive: {
       type: "button",
-      body: { text: "Lütfen dil seçin / Please select your language:" },
+      body: { text: "Rezervasyon için devam edin.\nLütfen dil seçin / Please select your language:" },
       action: {
         buttons: [
           { type: "reply", reply: { id: "lang_tr", title: "🇹🇷 Türkçe" } },
@@ -69,7 +69,7 @@ async function sendWelcomeMessage(phone, lang = 'tr') {
 
 async function sendMainMenu(phone, lang = 'tr') {
   const headerText = "🏖️ GOGA BEACH PLAJ SHUTTLE";
-  const bodyText = lang === 'en' ? "How can I help you? Please select an option from the menu:" : "Size nasıl yardımcı olabilirim? Lütfen menüden bir işlem seçin:";
+  const bodyText = lang === 'en' ? "How can I help you? Please select an action for reservation:" : "Size nasıl yardımcı olabilirim? Lütfen rezervasyon için işlem seçin:";
   const buttonText = lang === 'en' ? "Open Menu" : "Menüyü Aç";
   const sectionTitle = lang === 'en' ? "Options" : "İşlemler";
   const rezTitle = lang === 'en' ? "📅 Make Reservation" : "📅 Rezervasyon Yap";
@@ -124,7 +124,6 @@ async function sendDaySelectionList(phone, lang = 'tr') {
 
   const headerText = lang === 'en' ? "📅 Reservation Day" : "📅 Rezervasyon Günü";
   let bodyText = lang === 'en' ? "Please select the day you want to book:" : "Lütfen rezervasyon yapmak istediğiniz günü seçin:";
-  bodyText += `\n\nNot: Dönüşte rezervasyon yoktur. Kalkıştan 10-15 dk önce araca doğrudan binebilirsiniz. Dönüş servislerimiz SADECE Hacıosman Metro'ya yapılmaktadır.`;
   const buttonText = lang === 'en' ? "Select Day" : "Gün Seçin";
   const sectionTitle = lang === 'en' ? "Upcoming Days" : "Önümüzdeki Günler";
 
@@ -143,9 +142,7 @@ async function sendDaySelectionList(phone, lang = 'tr') {
           {
             title: sectionTitle,
             rows: [
-              { id: "day_bugun", title: `${todayTitle} (${d0})` },
-              { id: "day_yarin", title: `${tomorrowTitle} (${d1})` },
-              { id: "day_gun3", title: d2 }
+              { id: "day_yarin", title: `${tomorrowTitle} (${d1})` }
             ]
           }
         ]
@@ -310,8 +307,7 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
     // Format Title
     let displayKalkis = rawKalkis;
     if (tmp.yon === 'Donus') {
-      displayKalkis = lang === 'en' ? "Return to Hacıosman" : "Hacıosman Metro Dönüşü";
-      emoji = "🟢";
+      displayKalkis = lang === 'en' ? `Return to ${rawKalkis}` : `${rawKalkis} Dönüşü`;
     }
     
     const title = `${emoji} ${displayKalkis} ${tmp.saat}`;
@@ -356,7 +352,6 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
     : "\n\n🌆 *Dönüş Sefer Saatleri (Sadece Bilgi):*\n";
   if (availableDonus.length > 0) {
     donusText += availableDonus.map(t => "• " + t.title).join("\n");
-    donusText += "\n" + (lang === 'en' ? getSetting('donus_info_en') : getSetting('donus_info_tr'));
   } else {
     donusText += lang === 'en' ? "No return shuttles available." : "Uygun dönüş seferi bulunmamaktadır.";
   }
