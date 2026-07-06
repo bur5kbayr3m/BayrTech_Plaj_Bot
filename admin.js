@@ -43,9 +43,9 @@ async function showDeletionList(phone, gun, session) {
   const weekendDays = ["Cumartesi", "Pazar"];
   
   if (specificDays.includes(gun)) {
-    filtered = templates.filter(t => t.gun_tipi === 'Haftaici' && t.kalkis_yeri.includes(`(${gun})`));
+    filtered = templates.filter(t => t.gun_tipi === 'Haftaici' && (t.kalkis_yeri.includes(`(${gun})`) || !t.kalkis_yeri.includes('(')));
   } else if (weekendDays.includes(gun)) {
-    filtered = templates.filter(t => t.gun_tipi === 'Haftasonu' && t.kalkis_yeri.includes(`(${gun})`));
+    filtered = templates.filter(t => t.gun_tipi === 'Haftasonu' && (t.kalkis_yeri.includes(`(${gun})`) || !t.kalkis_yeri.includes('(')));
   } else if (gun === 'Haftaici') {
     filtered = templates.filter(t => t.gun_tipi === 'Haftaici' && !t.kalkis_yeri.includes('('));
   } else if (gun === 'Haftasonu') {
@@ -159,52 +159,13 @@ async function handleAdminFlow(phone, message, session) {
       }
     }
     
-    if (action === 'admin_saat_sil') {
-      updateSession(phone, { admin_step: 98, admin_action: 'delete' });
-      // Ask Gun Tipi for Deletion
-      return sendMessage({
-        messaging_product: "whatsapp",
-        to: phone,
-        type: "interactive",
-        interactive: {
-          type: "button",
-          body: { text: "📅 Hangi günün seferini SİLMEK istiyorsunuz?" },
-          action: {
-            buttons: [
-              { type: "reply", reply: { id: "del_gun_haftasonu", title: "Haftasonu" } },
-              { type: "reply", reply: { id: "del_gun_haftaici", title: "Haftaiçi" } }
-            ]
-          }
-        }
-      });
-    }
-
-    if (action === 'admin_saat_ekle') {
-      updateSession(phone, { admin_step: 2, admin_action: 'add' });
-      // Ask Gun Tipi
-      return sendMessage({
-        messaging_product: "whatsapp",
-        to: phone,
-        type: "interactive",
-        interactive: {
-          type: "button",
-          body: { text: "📅 Hangi gün tipi için saat ekliyorsunuz?" },
-          action: {
-            buttons: [
-              { type: "reply", reply: { id: "add_gun_haftasonu", title: "Haftasonu" } },
-              { type: "reply", reply: { id: "add_gun_haftaici", title: "Haftaiçi" } }
-            ]
-          }
-        }
-      });
-    }
-  }
-
-  // Deletion Step 1: Day Type Selected -> Ask Specific Day (if Haftaiçi) or Show Trips
-  if (session.admin_step === 98 && message.type === 'interactive' && message.interactive.button_reply) {
-    const gunId = message.interactive.button_reply.id.replace('del_gun_', '');
-    if (gunId === 'haftaici') {
-      updateSession(phone, { admin_step: 985 });
+    if (action === 'admin_saat_sil' || action === 'admin_saat_ekle') {
+      const isAdd = action === 'admin_saat_ekle';
+      updateSession(phone, { admin_step: 25, admin_action: isAdd ? 'add' : 'delete' });
+      
+      const prefix = isAdd ? 'add_day_' : 'del_day_';
+      const promptTxt = isAdd ? "📅 Hangi güne saat EKLEMEK istiyorsunuz?" : "📅 Hangi günün saatini SİLMEK istiyorsunuz?";
+      
       return sendMessage({
         messaging_product: "whatsapp",
         to: phone,
@@ -212,59 +173,28 @@ async function handleAdminFlow(phone, message, session) {
         interactive: {
           type: "list",
           header: { type: "text", text: "📅 Gün Seçimi" },
-          body: { text: "Hangi günün seferini silmek istiyorsunuz?" },
+          body: { text: promptTxt },
           action: {
             button: "Gün Seç",
             sections: [{
-              title: "Haftaiçi Günleri",
+              title: "Günler",
               rows: [
-                { id: "del_day_Haftaici", title: "Tüm Haftaiçi" },
-                { id: "del_day_Pazartesi", title: "Pazartesi" },
-                { id: "del_day_Salı", title: "Salı" },
-                { id: "del_day_Çarşamba", title: "Çarşamba" },
-                { id: "del_day_Perşembe", title: "Perşembe" },
-                { id: "del_day_Cuma", title: "Cuma" }
+                { id: `${prefix}Pazartesi`, title: "Pazartesi" },
+                { id: `${prefix}Salı`, title: "Salı" },
+                { id: `${prefix}Çarşamba`, title: "Çarşamba" },
+                { id: `${prefix}Perşembe`, title: "Perşembe" },
+                { id: `${prefix}Cuma`, title: "Cuma" },
+                { id: `${prefix}Cumartesi`, title: "Cumartesi" },
+                { id: `${prefix}Pazar`, title: "Pazar" }
               ]
             }]
           }
         }
       });
     }
-
-    if (gunId === 'haftasonu') {
-      updateSession(phone, { admin_step: 985 });
-      return sendMessage({
-        messaging_product: "whatsapp",
-        to: phone,
-        type: "interactive",
-        interactive: {
-          type: "list",
-          header: { type: "text", text: "📅 Gün Seçimi" },
-          body: { text: "Hangi günün seferini silmek istiyorsunuz?" },
-          action: {
-            button: "Gün Seç",
-            sections: [{
-              title: "Haftasonu Günleri",
-              rows: [
-                { id: "del_day_Haftasonu", title: "Tüm Haftasonu" },
-                { id: "del_day_Cumartesi", title: "Cumartesi" },
-                { id: "del_day_Pazar", title: "Pazar" }
-              ]
-            }]
-          }
-        }
-      });
-    }
-
-    let gun = "Hergün";
-    return showDeletionList(phone, gun, session);
   }
 
-  // Deletion Step 1.5: Specific Day Selected -> Show Trips
-  if (session.admin_step === 985 && message.type === 'interactive' && message.interactive.list_reply) {
-    const dayId = message.interactive.list_reply.id.replace('del_day_', '');
-    return showDeletionList(phone, dayId, session);
-  }
+
 
   // Deletion Step 2: Trip Selected -> Delete
   if (session.admin_step === 99 && message.type === 'interactive' && message.interactive.list_reply) {
@@ -300,102 +230,35 @@ async function handleAdminFlow(phone, message, session) {
     }
   }
 
-  // Step 2: Gun Tipi Selected -> Ask Yon (or specific day for Haftaici)
-  if (session.admin_step === 2 && message.type === 'interactive') {
-    const gunId = message.interactive.button_reply.id;
-    if (gunId.includes('haftaici')) {
-      updateSession(phone, { admin_step: 25 });
-      return sendMessage({
-        messaging_product: "whatsapp",
-        to: phone,
-        type: "interactive",
-        interactive: {
-          type: "list",
-          header: { type: "text", text: "📅 Gün Seçimi" },
-          body: { text: "Hangi güne eklemek istiyorsunuz?" },
-          action: {
-            button: "Gün Seç",
-            sections: [{
-              title: "Haftaiçi Günleri",
-              rows: [
-                { id: "add_day_Haftaici", title: "Tüm Haftaiçi" },
-                { id: "add_day_Pazartesi", title: "Pazartesi" },
-                { id: "add_day_Salı", title: "Salı" },
-                { id: "add_day_Çarşamba", title: "Çarşamba" },
-                { id: "add_day_Perşembe", title: "Perşembe" },
-                { id: "add_day_Cuma", title: "Cuma" }
-              ]
-            }]
-          }
-        }
-      });
-    }
 
-    if (gunId.includes('haftasonu')) {
-      updateSession(phone, { admin_step: 25 });
-      return sendMessage({
-        messaging_product: "whatsapp",
-        to: phone,
-        type: "interactive",
-        interactive: {
-          type: "list",
-          header: { type: "text", text: "📅 Gün Seçimi" },
-          body: { text: "Hangi güne eklemek istiyorsunuz?" },
-          action: {
-            button: "Gün Seç",
-            sections: [{
-              title: "Haftasonu Günleri",
-              rows: [
-                { id: "add_day_Haftasonu", title: "Tüm Haftasonu" },
-                { id: "add_day_Cumartesi", title: "Cumartesi" },
-                { id: "add_day_Pazar", title: "Pazar" }
-              ]
-            }]
-          }
-        }
-      });
-    }
 
-    let gun = "Hergün";
-    updateSession(phone, { admin_step: 3, admin_gun: gun });
-    
-    return sendMessage({
-      messaging_product: "whatsapp",
-      to: phone,
-      type: "interactive",
-      interactive: {
-        type: "button",
-        body: { text: "Yönü seçin:" },
-        action: {
-          buttons: [
-            { type: "reply", reply: { id: "add_yon_gidis", title: "Gidiş" } },
-            { type: "reply", reply: { id: "add_yon_donus", title: "Dönüş" } }
-          ]
-        }
-      }
-    });
-  }
-
-  // Step 2.5: Specific Day Selected -> Ask Yon
+  // Step 2.5: Specific Day Selected -> Ask Yon (or Show Trips for Delete)
   if (session.admin_step === 25 && message.type === 'interactive' && message.interactive.list_reply) {
-    const dayId = message.interactive.list_reply.id.replace('add_day_', '');
-    updateSession(phone, { admin_step: 3, admin_gun: dayId });
+    const listId = message.interactive.list_reply.id;
+    const dayId = listId.replace('add_day_', '').replace('del_day_', '');
+    
+    if (session.admin_action === 'delete') {
+      updateSession(phone, { admin_step: 202, admin_gun: dayId });
+      return showDeletionList(phone, dayId, session);
+    } else {
+      updateSession(phone, { admin_step: 3, admin_gun: dayId });
 
-    return sendMessage({
-      messaging_product: "whatsapp",
-      to: phone,
-      type: "interactive",
-      interactive: {
-        type: "button",
-        body: { text: "Yönü seçin:" },
-        action: {
-          buttons: [
-            { type: "reply", reply: { id: "add_yon_gidis", title: "Gidiş" } },
-            { type: "reply", reply: { id: "add_yon_donus", title: "Dönüş" } }
-          ]
+      return sendMessage({
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "interactive",
+        interactive: {
+          type: "button",
+          body: { text: "Yönü seçin:" },
+          action: {
+            buttons: [
+              { type: "reply", reply: { id: "add_yon_gidis", title: "Gidiş" } },
+              { type: "reply", reply: { id: "add_yon_donus", title: "Dönüş" } }
+            ]
+          }
         }
-      }
-    });
+      });
+    }
   }
 
   // Step 3: Yon Selected -> Ask Kalkis Yeri

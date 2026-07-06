@@ -142,6 +142,7 @@ async function sendDaySelectionList(phone, lang = 'tr') {
           {
             title: sectionTitle,
             rows: [
+              { id: "day_bugun", title: `${todayTitle} (${d0})` },
               { id: "day_yarin", title: `${tomorrowTitle} (${d1})` }
             ]
           }
