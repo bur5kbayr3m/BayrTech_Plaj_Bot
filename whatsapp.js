@@ -256,7 +256,7 @@ async function sendTripSelectionList(phone, dayTitle, lang = 'tr') {
   let allGidis = [];
   let allDonus = [];
   
-  const isWeekend = dayTitle.includes('Cumartesi') || dayTitle.includes('Saturday') || dayTitle.includes('Pazar') || dayTitle.includes('Sunday');
+  const isWeekend = dayTitle.includes('Cumartesi') || dayTitle.includes('Saturday') || dayTitle.includes('(Pazar)') || dayTitle.includes('Sunday');
   
   let specificDay = null;
   if (dayTitle.includes('Pazartesi') || dayTitle.includes('Monday')) specificDay = "Pazartesi";
