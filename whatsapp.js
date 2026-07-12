@@ -202,7 +202,9 @@ async function sendFaqAnswer(phone, faqId, lang = 'tr') {
       ? getSetting('faq_yemek_en')
       : getSetting('faq_yemek_tr');
   } else if (faqId === 'faq_konum') {
-    return getSetting('faq_konum_tr');
+    answer = lang === 'en' 
+      ? getSetting('faq_konum_en')
+      : getSetting('faq_konum_tr');
   } else if (faqId === 'faq_saat') {
     answer = lang === 'en' 
       ? getSetting('faq_saat_en')
