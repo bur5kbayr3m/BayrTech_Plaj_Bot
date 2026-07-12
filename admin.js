@@ -173,6 +173,7 @@ async function handleAdminFlow(phone, message, session) {
       
       if (isAdd) {
         rows.unshift({ id: `${prefix}Tum_Haftasonu`, title: "Tüm Haftasonu", description: "Cumartesi ve Pazar'a ekler" });
+        rows.unshift({ id: `${prefix}Tum_Hafta`, title: "Tüm Hafta", description: "Haftanın 7 gününe ekler" });
       }
 
       return sendMessage({
@@ -337,13 +338,22 @@ async function handleAdminFlow(phone, message, session) {
       if (session.admin_gun === 'Tum_Haftasonu') {
         await addTripTemplate(session.admin_yon, `${session.admin_kalkis} (Cumartesi)`, formattedSaat, 'Haftasonu');
         await addTripTemplate(session.admin_yon, `${session.admin_kalkis} (Pazar)`, formattedSaat, 'Haftasonu');
+      } else if (session.admin_gun === 'Tum_Hafta') {
+        const allSpecificDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
+        for (const day of allSpecificDays) {
+          await addTripTemplate(session.admin_yon, `${session.admin_kalkis} (${day})`, formattedSaat, 'Haftaici');
+        }
+        await addTripTemplate(session.admin_yon, `${session.admin_kalkis} (Cumartesi)`, formattedSaat, 'Haftasonu');
+        await addTripTemplate(session.admin_yon, `${session.admin_kalkis} (Pazar)`, formattedSaat, 'Haftasonu');
       } else {
         await addTripTemplate(session.admin_yon, finalKalkis, formattedSaat, gunTipi);
       }
       
       updateSession(phone, { admin_step: 1 });
       
-      const dayText = session.admin_gun === 'Tum_Haftasonu' ? "Tüm Haftasonu (Cumartesi & Pazar)" : session.admin_gun;
+      let dayText = session.admin_gun;
+      if (session.admin_gun === 'Tum_Haftasonu') dayText = "Tüm Haftasonu (Cumartesi & Pazar)";
+      if (session.admin_gun === 'Tum_Hafta') dayText = "Tüm Hafta (7 Gün)";
       
       return sendMessage({
         messaging_product: "whatsapp",
