@@ -165,7 +165,20 @@ async function handleAdminFlow(phone, message, session) {
       
       const prefix = isAdd ? 'add_day_' : 'del_day_';
       const promptTxt = isAdd ? "📅 Hangi güne saat EKLEMEK istiyorsunuz?" : "📅 Hangi günün saatini SİLMEK istiyorsunuz?";
+      let rows = [
+        { id: `${prefix}Pazartesi`, title: "Pazartesi" },
+        { id: `${prefix}Salı`, title: "Salı" },
+        { id: `${prefix}Çarşamba`, title: "Çarşamba" },
+        { id: `${prefix}Perşembe`, title: "Perşembe" },
+        { id: `${prefix}Cuma`, title: "Cuma" },
+        { id: `${prefix}Cumartesi`, title: "Cumartesi" },
+        { id: `${prefix}Pazar`, title: "Pazar" }
+      ];
       
+      if (isAdd) {
+        rows.unshift({ id: `${prefix}Tum_Haftasonu`, title: "Tüm Haftasonu", description: "Cumartesi ve Pazar'a ekler" });
+      }
+
       return sendMessage({
         messaging_product: "whatsapp",
         to: phone,
@@ -178,15 +191,7 @@ async function handleAdminFlow(phone, message, session) {
             button: "Gün Seç",
             sections: [{
               title: "Günler",
-              rows: [
-                { id: `${prefix}Pazartesi`, title: "Pazartesi" },
-                { id: `${prefix}Salı`, title: "Salı" },
-                { id: `${prefix}Çarşamba`, title: "Çarşamba" },
-                { id: `${prefix}Perşembe`, title: "Perşembe" },
-                { id: `${prefix}Cuma`, title: "Cuma" },
-                { id: `${prefix}Cumartesi`, title: "Cumartesi" },
-                { id: `${prefix}Pazar`, title: "Pazar" }
-              ]
+              rows: rows
             }]
           }
         }
@@ -333,15 +338,24 @@ async function handleAdminFlow(phone, message, session) {
     }
 
     try {
-      await addTripTemplate(session.admin_yon, finalKalkis, formattedSaat, gunTipi);
+      if (session.admin_gun === 'Tum_Haftasonu') {
+        await addTripTemplate(session.admin_yon, `${session.admin_kalkis} (Cumartesi)`, formattedSaat, 'Haftasonu');
+        await addTripTemplate(session.admin_yon, `${session.admin_kalkis} (Pazar)`, formattedSaat, 'Haftasonu');
+      } else {
+        await addTripTemplate(session.admin_yon, finalKalkis, formattedSaat, gunTipi);
+      }
+      
       updateSession(phone, { admin_step: 1 });
+      
+      const dayText = session.admin_gun === 'Tum_Haftasonu' ? "Tüm Haftasonu (Cumartesi & Pazar)" : session.admin_gun;
+      
       return sendMessage({
         messaging_product: "whatsapp",
         to: phone,
         type: "interactive",
         interactive: {
           type: "button",
-          body: { text: `🎉 Başarılı! \n\n${session.admin_gun} - ${session.admin_yon}\n${session.admin_kalkis} - ${formattedSaat}\n\nSaat başarıyla eklendi.` },
+          body: { text: `🎉 Başarılı! \n\n${dayText} - ${session.admin_yon}\n${session.admin_kalkis} - ${formattedSaat}\n\nSaat başarıyla eklendi.` },
           action: { buttons: [{ type: "reply", reply: { id: "menu_ana", title: "🏠 Ana Menü" } }] }
         }
       });
