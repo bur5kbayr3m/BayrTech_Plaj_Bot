@@ -43,13 +43,9 @@ async function showDeletionList(phone, gun, session) {
   const weekendDays = ["Cumartesi", "Pazar"];
   
   if (specificDays.includes(gun)) {
-    filtered = templates.filter(t => t.gun_tipi === 'Haftaici' && (t.kalkis_yeri.includes(`(${gun})`) || !t.kalkis_yeri.includes('(')));
+    filtered = templates.filter(t => t.gun_tipi === 'Haftaici' && t.kalkis_yeri.includes(`(${gun})`));
   } else if (weekendDays.includes(gun)) {
-    filtered = templates.filter(t => t.gun_tipi === 'Haftasonu' && (t.kalkis_yeri.includes(`(${gun})`) || !t.kalkis_yeri.includes('(')));
-  } else if (gun === 'Haftaici') {
-    filtered = templates.filter(t => t.gun_tipi === 'Haftaici' && !t.kalkis_yeri.includes('('));
-  } else if (gun === 'Haftasonu') {
-    filtered = templates.filter(t => t.gun_tipi === 'Haftasonu' && !t.kalkis_yeri.includes('('));
+    filtered = templates.filter(t => t.gun_tipi === 'Haftasonu' && t.kalkis_yeri.includes(`(${gun})`));
   } else {
     filtered = templates.filter(t => t.gun_tipi === gun);
   }
