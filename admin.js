@@ -1,6 +1,6 @@
 const { sendMessage } = require('./whatsapp');
 const { updateSession, resetSession } = require('./state');
-const { addTripTemplate, removeTripTemplate, removeTripTemplateById, getTripTemplates } = require('./supabase');
+const { addTripTemplate, removeTripTemplate, removeTripTemplateById, removeTripTemplateGroup, getTripTemplates } = require('./supabase');
 
 function getTurkeyTime() {
   const d = new Date();
@@ -42,15 +42,50 @@ async function showDeletionList(phone, gun, session) {
   const specificDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
   const weekendDays = ["Cumartesi", "Pazar"];
   
-  if (specificDays.includes(gun)) {
-    filtered = templates.filter(t => t.gun_tipi === 'Haftaici' && t.kalkis_yeri.includes(`(${gun})`));
-  } else if (weekendDays.includes(gun)) {
-    filtered = templates.filter(t => t.gun_tipi === 'Haftasonu' && t.kalkis_yeri.includes(`(${gun})`));
+  let rows = [];
+  
+  if (gun === 'Tum_Haftaici' || gun === 'Tum_Haftasonu') {
+    const targetGunTipi = gun === 'Tum_Haftaici' ? 'Haftaici' : 'Haftasonu';
+    const allTargetTrips = templates.filter(t => t.gun_tipi === targetGunTipi);
+    
+    const grouped = {};
+    for (const t of allTargetTrips) {
+      let baseKalkis = t.kalkis_yeri;
+      const bracketIdx = baseKalkis.lastIndexOf(' (');
+      if (bracketIdx !== -1) {
+        baseKalkis = baseKalkis.substring(0, bracketIdx);
+      }
+      const key = `${t.saat}_${t.yon}_${baseKalkis}`;
+      if (!grouped[key]) {
+        grouped[key] = { saat: t.saat, yon: t.yon, baseKalkis: baseKalkis, gun_tipi: targetGunTipi };
+      }
+    }
+    
+    const groupValues = Object.values(grouped);
+    if (groupValues.length > 0) {
+      filtered = [1]; // bypass empty check
+      rows = groupValues.slice(0, 10).map(g => ({
+        // Limit id to standard chars to be safe. We replace spaces with underscores in baseKalkis
+        id: `del_grp_${g.saat}_${g.yon}_${g.baseKalkis.replace(/ /g, '_')}_${g.gun_tipi}`.substring(0, 200),
+        title: `${g.saat} ${g.baseKalkis}`.substring(0, 24),
+        description: `Tüm ${g.gun_tipi} silinecek`
+      }));
+    }
   } else {
-    filtered = templates.filter(t => t.gun_tipi === gun);
+    if (specificDays.includes(gun)) {
+      filtered = templates.filter(t => t.gun_tipi === 'Haftaici' && t.kalkis_yeri.includes(`(${gun})`));
+    } else if (weekendDays.includes(gun)) {
+      filtered = templates.filter(t => t.gun_tipi === 'Haftasonu' && t.kalkis_yeri.includes(`(${gun})`));
+    }
+    
+    rows = filtered.slice(0, 10).map(t => ({
+      id: `del_tmp_${t.id}`,
+      title: `${t.saat} ${t.kalkis_yeri}`.substring(0, 24),
+      description: `${t.gun_tipi} - ${t.yon}`
+    }));
   }
   
-  if (filtered.length === 0) {
+  if (rows.length === 0) {
     updateSession(phone, { admin_step: 1 });
     return sendMessage({
       messaging_product: "whatsapp",
@@ -58,17 +93,11 @@ async function showDeletionList(phone, gun, session) {
       type: "interactive",
       interactive: {
         type: "button",
-        body: { text: `Sistemde ${gun} için kayıtlı sefer bulunmuyor.` },
+        body: { text: `Sistemde bu kriterlere uygun kayıtlı sefer bulunmuyor.` },
         action: { buttons: [{ type: "reply", reply: { id: "menu_ana", title: "🏠 Ana Menü" } }] }
       }
     });
   }
-  
-  const rows = filtered.slice(0, 10).map(t => ({
-    id: `del_tmp_${t.id}`,
-    title: `${t.saat} ${t.kalkis_yeri}`.substring(0, 24),
-    description: `${t.gun_tipi} - ${t.yon}`
-  }));
   
   updateSession(phone, { admin_step: 99 });
   try {
@@ -161,6 +190,8 @@ async function handleAdminFlow(phone, message, session) {
       
       const prefix = isAdd ? 'add_day_' : 'del_day_';
       const promptTxt = isAdd ? "📅 Hangi güne saat EKLEMEK istiyorsunuz?" : "📅 Hangi günün saatini SİLMEK istiyorsunuz?";
+      const suffixTxt = isAdd ? "ekler" : "siler";
+      
       let rows = [
         { id: `${prefix}Pazartesi`, title: "Pazartesi" },
         { id: `${prefix}Salı`, title: "Salı" },
@@ -171,10 +202,8 @@ async function handleAdminFlow(phone, message, session) {
         { id: `${prefix}Pazar`, title: "Pazar" }
       ];
       
-      if (isAdd) {
-        rows.unshift({ id: `${prefix}Tum_Haftasonu`, title: "Tüm Haftasonu", description: "Cumartesi ve Pazar'a ekler" });
-        rows.unshift({ id: `${prefix}Tum_Hafta`, title: "Tüm Hafta", description: "Haftanın 7 gününe ekler" });
-      }
+      rows.unshift({ id: `${prefix}Tum_Haftasonu`, title: "Tüm Haftasonu", description: `Cumartesi ve Pazar'dan ${suffixTxt}` });
+      rows.unshift({ id: `${prefix}Tum_Haftaici`, title: "Tüm Haftaiçi", description: `Haftaiçi 5 günden ${suffixTxt}` });
 
       return sendMessage({
         messaging_product: "whatsapp",
@@ -200,12 +229,26 @@ async function handleAdminFlow(phone, message, session) {
 
   // Deletion Step 2: Trip Selected -> Delete
   if (session.admin_step === 99 && message.type === 'interactive' && message.interactive.list_reply) {
-    const replyId = message.interactive.list_reply.id; // e.g. "del_tmp_123"
-    const tripId = replyId.replace('del_tmp_', '');
-    const title = message.interactive.list_reply.title; // e.g. "08:30 Haciosman Metro"
+    const replyId = message.interactive.list_reply.id; 
+    const title = message.interactive.list_reply.title;
     
     try {
-      await removeTripTemplateById(tripId);
+      if (replyId.startsWith('del_grp_')) {
+        const parts = replyId.split('_');
+        const gun_tipi_grp = parts.pop();
+        const saat_grp = parts[2];
+        const yon_grp = parts[3];
+        const baseKalkisTokens = [];
+        for (let i = 4; i < parts.length; i++) {
+            baseKalkisTokens.push(parts[i]);
+        }
+        const baseKalkis_grp = baseKalkisTokens.join(' ');
+        
+        await removeTripTemplateGroup(saat_grp, yon_grp, baseKalkis_grp, gun_tipi_grp);
+      } else {
+        const tripId = replyId.replace('del_tmp_', '');
+        await removeTripTemplateById(tripId);
+      }
       updateSession(phone, { admin_step: 1 });
       return sendMessage({
         messaging_product: "whatsapp",
@@ -338,13 +381,11 @@ async function handleAdminFlow(phone, message, session) {
       if (session.admin_gun === 'Tum_Haftasonu') {
         await addTripTemplate(session.admin_yon, `${session.admin_kalkis} (Cumartesi)`, formattedSaat, 'Haftasonu');
         await addTripTemplate(session.admin_yon, `${session.admin_kalkis} (Pazar)`, formattedSaat, 'Haftasonu');
-      } else if (session.admin_gun === 'Tum_Hafta') {
+      } else if (session.admin_gun === 'Tum_Haftaici') {
         const allSpecificDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
         for (const day of allSpecificDays) {
           await addTripTemplate(session.admin_yon, `${session.admin_kalkis} (${day})`, formattedSaat, 'Haftaici');
         }
-        await addTripTemplate(session.admin_yon, `${session.admin_kalkis} (Cumartesi)`, formattedSaat, 'Haftasonu');
-        await addTripTemplate(session.admin_yon, `${session.admin_kalkis} (Pazar)`, formattedSaat, 'Haftasonu');
       } else {
         await addTripTemplate(session.admin_yon, finalKalkis, formattedSaat, gunTipi);
       }
@@ -353,7 +394,7 @@ async function handleAdminFlow(phone, message, session) {
       
       let dayText = session.admin_gun;
       if (session.admin_gun === 'Tum_Haftasonu') dayText = "Tüm Haftasonu (Cumartesi & Pazar)";
-      if (session.admin_gun === 'Tum_Hafta') dayText = "Tüm Hafta (7 Gün)";
+      if (session.admin_gun === 'Tum_Haftaici') dayText = "Tüm Haftaiçi (5 Gün)";
       
       return sendMessage({
         messaging_product: "whatsapp",

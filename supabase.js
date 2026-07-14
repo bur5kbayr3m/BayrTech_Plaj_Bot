@@ -317,6 +317,19 @@ async function removeTripTemplateById(id) {
   if (error) throw error;
 }
 
+async function removeTripTemplateGroup(saat, yon, baseKalkis, gunTipi) {
+  if (!supabase) throw new Error('Supabase not configured');
+  // We match by `like` on kalkis_yeri so that "Mecidiyeköy" matches "Mecidiyeköy (Pazartesi)"
+  const { error } = await supabase
+    .from('trip_templates')
+    .delete()
+    .eq('saat', saat)
+    .eq('yon', yon)
+    .eq('gun_tipi', gunTipi)
+    .like('kalkis_yeri', `${baseKalkis}%`);
+  if (error) throw error;
+}
+
 async function getTripCapacityDetails(seferId) {
   const { data: trip } = await supabase.from('trips').select('toplam_kapasite').eq('id', seferId).single();
   if (!trip) return { isFull: false, remaining: 15 };
@@ -352,6 +365,7 @@ module.exports = {
   addTripTemplate,
   removeTripTemplate,
   removeTripTemplateById,
+  removeTripTemplateGroup,
   getTripCapacityDetails,
   getApprovedCapacity
 };
