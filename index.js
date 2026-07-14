@@ -421,7 +421,7 @@ app.post('/webhook', async (req, res) => {
             if (replyId === 'grup_erkek_iptal') {
               const errMsg = session.lang === 'en' 
                 ? "❌ Sorry, entry without a female companion is not allowed. We cannot accept reservations for all-male groups. Thank you for your understanding."
-                : "❌ Üzgünüz, plajımıza damsız giriş yapılamadığı için sadece erkek gruplarının rezervasyonunu kabul edemiyoruz. Anlayışınız için teşekkür ederiz.";
+                : "❌ Üzgünüz, ❗ Tek erkek ve erkek gruplarına hizmet vermemekteyiz. Anlayışınız için teşekkür ederiz.";
               
               await sendMessage({
                 messaging_product: "whatsapp",

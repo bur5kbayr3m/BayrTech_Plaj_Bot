@@ -385,7 +385,7 @@ async function sendGroupSelectionList(phone, dayTitle, timeTitle, lang = 'tr') {
   const headerText = lang === 'en' ? "👥 Select Your Group" : "👥 Lütfen Grubunuzu Seçin";
   const bodyText = lang === 'en'
     ? `Selection: ${dayTitle} - ${timeTitle}\nNo single men allowed. Please select the number of people:\n\n⚠️ Important: This reservation is only for the shuttle service. No separate reservation is made for beach entry.`
-    : `Seçim: ${dayTitle} - ${timeTitle}\nPlajımıza damsız giriş yapılamamaktadır. Lütfen kişi sayısını seçiniz:\n\n⚠️ Önemli: Bu kısımda yapılan rezervasyon sadece shuttle servisi içindir. Plaj içerisi için ayrı bir rezervasyon yapılmamaktadır.`;
+    : `Seçim: ${dayTitle} - ${timeTitle}\n❗ Tek erkek ve erkek gruplarına hizmet vermemekteyiz. Lütfen kişi sayısını seçiniz:\n\n⚠️ Önemli: Bu kısımda yapılan rezervasyon sadece shuttle servisi içindir. Plaj içerisi için ayrı bir rezervasyon yapılmamaktadır.`;
   
   const btnText = lang === 'en' ? "👥 Select Group Size" : "👥 Kişi Sayısı Seçin";
   const validGroupsTitle = lang === 'en' ? "Valid Options" : "Uygun Gruplar";

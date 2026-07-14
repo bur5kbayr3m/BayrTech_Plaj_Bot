@@ -19,7 +19,7 @@ const defaultSettings = {
   contact_phone: "0545 578 41 53",
   donus_info_tr: "_Not: Dönüşte rezervasyon yoktur. Kalkıştan 10-15 dk önce araca doğrudan binebilirsiniz._",
   donus_info_en: "_Note: Return trips do not require reservations. You can board the vehicle 10-15 mins before departure._",
-  welcome_text_tr: "MERHABA 🌴\n\n🚐 SHUTTLE (TEK YÖN):\nHacıosman: 300₺\nMecidiyeköy: 350 ₺\n\n🏖️ PLAJ GİRİŞ ÜCRETİ\nHafta İçi: 800₺\nHafta Sonu: 1200₺\n\n(Şezlong, şemsiye, otopark, duş ve WC dahildir.)\n0-6 yaş ücretsiz\n7-12 yaş: yarı fiyat\n\n⚠️ Plajımıza damsız giriş yapılamamaktadır.",
+  welcome_text_tr: "MERHABA 🌴\n\n🚐 SHUTTLE (TEK YÖN):\nHacıosman: 300₺\nMecidiyeköy: 350 ₺\n\n🏖️ PLAJ GİRİŞ ÜCRETİ\nHafta İçi: 800₺\nHafta Sonu: 1200₺\n\n(Şezlong, şemsiye, otopark, duş ve WC dahildir.)\n0-6 yaş ücretsiz\n7-12 yaş: yarı fiyat\n\n❗ Tek erkek ve erkek gruplarına hizmet vermemekteyiz.",
   welcome_text_en: "HELLO 🌴\n\n🚐 SHUTTLE (ONE WAY):\nHacıosman: 300₺\nMecidiyeköy: 350₺\n\n🏖️ BEACH ENTRANCE FEE\nWeekday: 800₺\nWeekend: 1200₺\n\n(Sunbed, umbrella, parking, shower and WC included.)\n0-6 years free\n7-12 years: half price\n\n⚠️ Entry without a female companion is not allowed."
 };
 
