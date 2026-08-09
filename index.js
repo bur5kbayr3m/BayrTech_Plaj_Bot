@@ -18,6 +18,7 @@ const {
   sendContactSupport,
   sendMessage
 } = require('./whatsapp');
+const { getSetting } = require('./settingsManager');
 
 const fs = require('fs');
 const path = require('path');
@@ -67,7 +68,8 @@ app.post('/webhook', async (req, res) => {
       const { sendAdminMainMenu, handleAdminFlow, startAdminReservationFlow } = require('./admin');
       
       // Admin Interception
-      const isAdmin = process.env.ADMIN_PHONE && phone.includes(process.env.ADMIN_PHONE.trim().replace('+', '').replace(/^0/, ''));
+      const adminPhoneNumber = getSetting('admin_phone') || process.env.ADMIN_PHONE || '';
+      const isAdmin = adminPhoneNumber && phone.includes(adminPhoneNumber.trim().replace('+', '').replace(/^0/, ''));
       
       if (session.admin_step > 0) {
         await handleAdminFlow(phone, message, session);
@@ -107,8 +109,8 @@ app.post('/webhook', async (req, res) => {
 
           await sendProcessingMessage(phone, session.selected_day, session.selected_time, session.selected_count, session.selected_name, session.lang);
           
-          if (savedRes && savedRes.id && process.env.ADMIN_PHONE) {
-            let adminPhone = process.env.ADMIN_PHONE.trim().replace('+', '');
+          if (savedRes && savedRes.id && adminPhoneNumber) {
+            let adminPhone = adminPhoneNumber.trim().replace('+', '');
             if (adminPhone.startsWith('0')) adminPhone = '90' + adminPhone.substring(1);
             else if (!adminPhone.startsWith('90') && adminPhone.length > 0) adminPhone = '90' + adminPhone;
 
@@ -142,7 +144,7 @@ app.post('/webhook', async (req, res) => {
         }
 
         if (replyId) {
-          let adminPhoneNorm = process.env.ADMIN_PHONE || '';
+          let adminPhoneNorm = adminPhoneNumber;
           adminPhoneNorm = adminPhoneNorm.trim().replace('+', '');
           if (adminPhoneNorm.startsWith('0')) adminPhoneNorm = '90' + adminPhoneNorm.substring(1);
           else if (!adminPhoneNorm.startsWith('90') && adminPhoneNorm.length > 0) adminPhoneNorm = '90' + adminPhoneNorm;

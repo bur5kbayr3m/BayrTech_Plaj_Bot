@@ -6,8 +6,9 @@ const { getDailyReservations, cleanUpDatabase } = require('./supabase');
 const { sendPdfDocument } = require('./whatsapp');
 const { cleanUpSessions } = require('./state');
 require('dotenv').config();
+const { getSetting } = require('./settingsManager');
 
-const ADMIN_PHONE = process.env.ADMIN_PHONE;
+const ADMIN_PHONE = getSetting('admin_phone') || process.env.ADMIN_PHONE;
 
 function replaceTurkishChars(text) {
   if (!text) return '';
