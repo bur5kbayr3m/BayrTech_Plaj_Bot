@@ -235,10 +235,10 @@ async function sendContactSupport(phone, lang = 'tr') {
   const bodyText = lang === 'en' 
     ? `🎧 To speak with a representative and get live support, please click the link below to contact us directly via WhatsApp:
 
-👉 https://wa.me/905357345806`
+👉 https://wa.me/905309561053`
     : `🎧 Yetkiliyle görüşmek ve canlı destek almak için lütfen aşağıdaki linke tıklayarak doğrudan WhatsApp üzerinden iletişime geçin:
 
-👉 https://wa.me/905357345806`;
+👉 https://wa.me/905309561053`;
 
   const data = {
     messaging_product: "whatsapp",
