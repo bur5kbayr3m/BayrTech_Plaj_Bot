@@ -40,6 +40,15 @@ app.use((req, res, next) => {
 const PORT = process.env.PORT || 3000;
 const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN || 'my_verify_token';
 
+// Global error handlers to prevent the server from crashing completely
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+});
+
 app.get('/webhook', (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
@@ -58,6 +67,9 @@ app.post('/webhook', async (req, res) => {
     if (body.object !== 'whatsapp_business_account') {
       return res.sendStatus(404);
     }
+    
+    // WhatsApp Cloud API requires immediate 200 OK response to prevent timeouts and single ticks
+    res.sendStatus(200);
 
     if (body.entry && body.entry[0].changes && body.entry[0].changes[0].value.messages && body.entry[0].changes[0].value.messages[0]) {
       const message = body.entry[0].changes[0].value.messages[0];
@@ -73,7 +85,7 @@ app.post('/webhook', async (req, res) => {
       
       if (session.admin_step > 0) {
         await handleAdminFlow(phone, message, session);
-        return res.sendStatus(200);
+        return;
       }
 
       if (message.type === 'text') {
@@ -82,12 +94,12 @@ app.post('/webhook', async (req, res) => {
         if (isAdmin && (textLower === 'ayarlar' || textLower === 'admin')) {
           updateSession(phone, { admin_step: 1 });
           await sendAdminMainMenu(phone);
-          return res.sendStatus(200);
+          return;
         }
         
         if (isAdmin && textLower === 'rezervasyon') {
           await startAdminReservationFlow(phone);
-          return res.sendStatus(200);
+          return;
         }
 
         if (session && session.step === 4) {
@@ -122,7 +134,7 @@ app.post('/webhook', async (req, res) => {
           }
           
           resetSession(phone);
-          return res.sendStatus(200);
+          return;
         }
 
         // New connection or text out of flow: Ask for language
@@ -177,7 +189,7 @@ app.post('/webhook', async (req, res) => {
                 text: { body: userSession.lang === 'en' ? "❌ This reservation has already been cancelled or processed." : "❌ Bu rezervasyon zaten iptal edilmiş veya işlemi tamamlanmış durumda." }
               });
             }
-            return res.sendStatus(200);
+            return;
           }
           
           if (phone === adminPhoneNorm && (replyId.startsWith('admin_cancel_app_') || replyId.startsWith('admin_cancel_rej_'))) {
@@ -223,7 +235,7 @@ app.post('/webhook', async (req, res) => {
                   text: { body: "❌ İptal işlemi reddedildi." }
               });
             }
-            return res.sendStatus(200);
+            return;
           }
 
           if (phone === adminPhoneNorm && replyId.startsWith('add_cap_')) {
@@ -249,7 +261,7 @@ app.post('/webhook', async (req, res) => {
                 text: { body: "❌ Kapasite artırılırken bir hata oluştu." }
               });
             }
-            return res.sendStatus(200);
+            return;
           }
 
           if (phone === adminPhoneNorm && (replyId.startsWith('admin_approve_') || replyId.startsWith('admin_reject_') || replyId.startsWith('admin_full_'))) {
@@ -275,7 +287,7 @@ app.post('/webhook', async (req, res) => {
                       type: "text",
                       text: { body: `❌ Onay başarısız! Bu seferde halihazırda onaylanmış ${currentApproved} kişi var. Kalan boş yer: ${trip.toplam_kapasite - currentApproved}. Müşteri ${currentRes.kisi_sayisi} kişi olduğu için kapasiteyi (15) aşıyor. Lütfen ⚠️ Dolu (Yönlendir) butonunu kullanın veya kapasiteyi artırın.` }
                     });
-                    return res.sendStatus(200);
+                    return;
                   }
                 }
               }
@@ -357,7 +369,7 @@ app.post('/webhook', async (req, res) => {
                 text: { body: errMsg }
               }).catch(e => console.error("Error sending admin fail msg:", e));
             }
-            return res.sendStatus(200);
+            return;
           }
 
           // Language Selection Handle
@@ -394,7 +406,7 @@ app.post('/webhook', async (req, res) => {
             if (!session.selected_day) {
               session = resetSession(phone);
               await sendLanguageSelection(phone);
-              return res.sendStatus(200);
+              return;
             }
             const seferId = replyId.replace('sefer_', '');
             
@@ -406,18 +418,18 @@ app.post('/webhook', async (req, res) => {
                 ? "❌ Sorry, this shuttle is fully booked (including pending requests). Please select another time."
                 : "❌ Maalesef seçtiğiniz seferin kontenjanı tamamen dolmuştur (bekleyen onay sürecindeki talepler dahil). Lütfen farklı bir saat seçin.";
               await sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: errMsg } });
-              return res.sendStatus(200);
+              return;
             }
             
             session = updateSession(phone, { step: 3, selected_time: replyTitle, selected_trip_id: seferId, remaining_cap: cap.remaining });
             await sendGroupSelectionList(phone, session.selected_day, session.selected_time, session.lang);
           }
           else if (replyId.startsWith('grup_')) {
-            if (session.step === 4) return res.sendStatus(200); // Ignore duplicate click
+            if (session.step === 4) return; // Ignore duplicate click
             if (!session.selected_day || !session.selected_time) {
               session = resetSession(phone);
               await sendLanguageSelection(phone);
-              return res.sendStatus(200);
+              return;
             }
 
             if (replyId === 'grup_erkek_iptal') {
@@ -433,7 +445,7 @@ app.post('/webhook', async (req, res) => {
                 text: { body: errMsg }
               });
               resetSession(phone);
-              return res.sendStatus(200);
+              return;
             }
 
             const countNum = parseInt(replyId.split('_').pop()) || 1;
@@ -443,7 +455,7 @@ app.post('/webhook', async (req, res) => {
                  ? `❌ Sorry, there are only ${session.remaining_cap} spots left on this shuttle. You cannot book for ${countNum} people. Please select another time or reduce your group size.`
                  : `❌ Maalesef bu seferde sadece ${session.remaining_cap} kişilik boş yer kalmıştır. ${countNum} kişi için rezervasyon alamıyoruz. Lütfen farklı bir saat seçin veya kişi sayısını azaltın.`;
                await sendMessage({ messaging_product: "whatsapp", to: phone, type: "text", text: { body: errMsg } });
-               return res.sendStatus(200);
+               return;
             }
 
             session = updateSession(phone, { step: 4, selected_count: replyTitle, selected_count_num: countNum });
@@ -457,10 +469,8 @@ app.post('/webhook', async (req, res) => {
       }
     }
 
-    res.sendStatus(200);
   } catch (error) {
     console.error('Error handling webhook:', error);
-    res.sendStatus(500);
   }
 });
 
