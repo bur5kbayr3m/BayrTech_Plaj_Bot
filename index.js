@@ -466,6 +466,9 @@ app.post('/webhook', async (req, res) => {
             await sendLanguageSelection(phone);
           }
         }
+      } else {
+        session = resetSession(phone);
+        await sendLanguageSelection(phone);
       }
     }
 

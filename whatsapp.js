@@ -23,10 +23,13 @@ async function sendMessage(data) {
 
   try {
     const response = await api.post('/messages', data);
+    console.log(`[SUCCESS] Message sent to ${data.to}. Message ID: ${response.data?.messages?.[0]?.id}`);
     return response.data;
   } catch (error) {
-    console.error('Error sending WhatsApp message:', error.response ? error.response.data : error.message);
-    throw error;
+    const errObj = error.response ? error.response.data : error.message;
+    console.error(`[ERROR] Failed to send message to ${data.to}. Details:`, JSON.stringify(errObj));
+    // Don't throw error to prevent unhandled rejections that might break the webhook
+    return null;
   }
 }
 
